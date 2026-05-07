@@ -61,6 +61,9 @@ const PatientDetail: React.FC = () => {
   const [printPresc, setPrintPresc] = useState<any>(null);
   const [doctorProfile, setDoctorProfile] = useState<any>(null);
   const [editingPrescId, setEditingPrescId] = useState<string | null>(null);
+  const [showApptModal, setShowApptModal] = useState(false);
+  const [apptSaving, setApptSaving] = useState(false);
+  const [apptForm, setApptForm] = useState({ date: "", startTime: "09:00", endTime: "09:30", type: "FOLLOW_UP", reason: "" });
 
   const handleEditPresc = async (p: any) => {
     const meds = (p.medications || []).map((m: any) => ({
@@ -148,6 +151,35 @@ const PatientDetail: React.FC = () => {
     doctorAPI.getProfile().then(r => setDoctorProfile(r.data.data)).catch(() => {});
   };
   useEffect(() => { loadDoctorProfile(); }, []);
+
+  const openApptModal = () => {
+    setApptForm({ date: new Date().toISOString().slice(0, 10), startTime: "09:00", endTime: "09:30", type: "FOLLOW_UP", reason: "" });
+    setShowApptModal(true);
+  };
+
+  const handleCreateAppt = async () => {
+    if (!apptForm.date || !apptForm.startTime || !apptForm.endTime) { alert("Date et heures requises"); return; }
+    setApptSaving(true);
+    try {
+      const start = new Date(apptForm.date + "T" + apptForm.startTime);
+      const end = new Date(apptForm.date + "T" + apptForm.endTime);
+      if (end <= start) { alert("L\u2019heure de fin doit etre apres l\u2019heure de debut"); setApptSaving(false); return; }
+      const profRes = await (doctorAPI as any).getProfile();
+      await (doctorAPI as any).createAppointment({
+        patientId: id,
+        doctorId: profRes.data.data.id,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        type: apptForm.type,
+        reason: apptForm.reason || undefined,
+      });
+      load();
+      setShowApptModal(false);
+    } catch (err: any) { alert(err.response?.data?.error || "Erreur lors de la creation"); }
+    finally { setApptSaving(false); }
+  };
+
+  const updAppt = (patch: any) => setApptForm(prev => ({ ...prev, ...patch }));
 
   const openPrescModal = () => {
     setPrescMeds([{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
@@ -256,6 +288,7 @@ const PatientDetail: React.FC = () => {
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-primary btn-sm" onClick={openConsultModal}>+ Consultation</button>
           <button className="btn btn-outline btn-sm" onClick={openPrescModal}>+ Ordonnance</button>
+          <button className="btn btn-outline btn-sm" onClick={openApptModal}>+ Rendez-vous</button>
         </div>
       </div>
 
@@ -499,6 +532,50 @@ const PatientDetail: React.FC = () => {
                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer la consultation'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Rendez-vous ── */}
+      {showApptModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowApptModal(false)}>
+          <div className="modal" style={{ maxWidth: 480 }}>
+            <div className="modal-header">
+              <span className="modal-title">Nouveau rendez-vous</span>
+              <button className="btn-close" onClick={() => setShowApptModal(false)}>x</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Date *</label>
+                <input className="form-control" type="date" value={apptForm.date} onChange={e => updAppt({ date: e.target.value })} />
+              </div>
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label className="form-label">Heure debut *</label>
+                  <input className="form-control" type="time" value={apptForm.startTime} onChange={e => updAppt({ startTime: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Heure fin *</label>
+                  <input className="form-control" type="time" value={apptForm.endTime} onChange={e => updAppt({ endTime: e.target.value })} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Type</label>
+                <select className="form-control" value={apptForm.type} onChange={e => updAppt({ type: e.target.value })}>
+                  {Object.entries(typeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Motif</label>
+                <textarea className="form-control" rows={2} placeholder="Motif du rendez-vous..." value={apptForm.reason} onChange={e => updAppt({ reason: e.target.value })} />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowApptModal(false)}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleCreateAppt} disabled={apptSaving}>
+                {apptSaving ? 'Enregistrement...' : 'Creer le rendez-vous'}
+              </button>
+            </div>
           </div>
         </div>
       )}
