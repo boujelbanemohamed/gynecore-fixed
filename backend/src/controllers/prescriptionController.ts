@@ -23,7 +23,6 @@ export const getPrescriptions = async (req: Request, res: Response) => {
     const doctorId = req.user!.userId;
     const patientId = req.query.patientId as string;
 
-    // Restreint aux prescriptions des patients du médecin connecté
     const where: Record<string, unknown> = { patient: { doctorId } };
     if (patientId) where.patientId = patientId;
     const prescriptions = await prisma.prescription.findMany({
@@ -43,7 +42,6 @@ export const createPrescription = async (req: Request, res: Response) => {
     const doctorId = req.user!.userId;
     const data = createPrescriptionSchema.parse(req.body);
 
-    // Vérifie que le patient appartient à ce médecin
     const patient = await prisma.patient.findFirst({ where: { id: data.patientId, doctorId } });
     if (!patient) return res.status(404).json({ success: false, error: 'Patiente non trouvée' });
 
@@ -63,16 +61,15 @@ export const updatePrescription = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const doctorId = req.user!.userId;
-    const { medications, notes } = req.body;
+    const { medications, notes, date } = req.body;
     if (!medications || !Array.isArray(medications) || medications.length === 0) {
       return res.status(400).json({ success: false, error: 'Au moins un medicament requis' });
     }
-    // Vérifie que la prescription appartient à un patient de ce médecin
     const existing = await prisma.prescription.findFirst({ where: { id, patient: { doctorId } } });
     if (!existing) return res.status(404).json({ success: false, error: 'Ordonnance non trouvée' });
     const prescription = await prisma.prescription.update({
       where: { id },
-      data: { medications, notes: notes || null },
+      data: { medications, notes: notes || null, date: date ? new Date(date) : undefined },
       include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
     });
     return res.json({ success: true, data: prescription });
@@ -103,7 +100,7 @@ export const getPrescriptionById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const doctorId = req.user!.userId;
     const prescription = await prisma.prescription.findFirst({
-      where: { id, patient: { doctorId } }, // Vérifie l'appartenance au médecin
+      where: { id, patient: { doctorId } },
       include: { patient: { include: { user: { select: { firstName: true, lastName: true, email: true, phone: true } } } }, consultation: { select: { id: true, date: true, type: true, diagnosis: true } } },
     });
     if (!prescription) return res.status(404).json({ success: false, error: 'Ordonnance non trouvee' });

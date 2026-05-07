@@ -78,7 +78,7 @@ const PatientDetail: React.FC = () => {
     if (validMeds.length === 0) { alert('Ajoutez au moins un médicament'); return; }
     setPrescSaving(true);
     try {
-      await (doctorAPI as any).updatePrescription(editingPrescId, { medications: validMeds, notes: prescNotes || undefined });
+      await (doctorAPI as any).updatePrescription(editingPrescId, { medications: validMeds, notes: prescNotes || undefined, date: prescDate || undefined });
       load();
       setShowPrescModal(false);
       setEditingPrescId(null);
@@ -505,6 +505,11 @@ const PatientDetail: React.FC = () => {
                   </div>
                 ))}
                 <button className="btn btn-outline btn-sm" onClick={addMedRow} style={{ alignSelf: 'flex-start' }}>+ Ajouter un médicament</button>
+              </div>
+              <div className="form-group" style={{ marginTop: 16 }}>
+                              <div className="form-group">
+                <label className="form-label">Date de l'ordonnance</label>
+                <input className="form-control" type="date" value={prescDate} onChange={e => setPrescDate(e.target.value)} />
               </div>
               <div className="form-group" style={{ marginTop: 16 }}>
                 <label className="form-label">Notes</label>
