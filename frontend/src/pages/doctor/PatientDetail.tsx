@@ -552,9 +552,9 @@ const PatientDetail: React.FC = () => {
             <div><strong>Âge :</strong> {printPresc.patient?.dateOfBirth ? calcAge(printPresc.patient.dateOfBirth) + ' ans' : '—'}</div>
           </div>
           <div className="rx-date-place">
-            <span>Fait le {new Date(printPresc.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-            <span>À {doctorProfile?.city || ''}</span>
-          </div>
+          <div className="rx-date-place">
+            <span>Fait à {doctorProfile?.city || 'Tunis'}, le {new Date(printPresc.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>          </div>
           <table className="rx-meds-table">
             <thead><tr><th>Médicament</th><th>Dosage</th><th>Fréquence</th><th>Durée</th><th>Instructions</th></tr></thead>
             <tbody>
@@ -568,10 +568,6 @@ const PatientDetail: React.FC = () => {
           )}
           <div className="rx-footer">
             <div className="rx-signature"><div className="rx-sig-line">Signature et cachet du médecin</div></div>
-            <div className="rx-footer-info">
-              <div>GyneCare — Logiciel de gestion médicale</div>
-              <div>Document généré le {new Date().toLocaleDateString('fr-FR')}</div>
-            </div>
           </div>
         </div>
       )}
