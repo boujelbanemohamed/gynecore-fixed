@@ -82,7 +82,7 @@ echo -e "${GREEN}  .env configuré${NC}"
 
 # 6. Migration + Seed
 echo -e "${YELLOW}[6/7] Migration Prisma...${NC}"
-cd ~/gynecare-fixed/backend
+cd ~/Desktop/gynecare-fixed/backend
 npx prisma migrate deploy
 
 echo -e "${YELLOW}  Données de test...${NC}"
@@ -97,8 +97,8 @@ echo -e "${GREEN}=============================================${NC}"
 echo ""
 echo "Ouvrez 2 terminaux :"
 echo ""
-echo "  Terminal 1 : cd ~/gynecare-fixed/backend && npm run dev"
-echo "  Terminal 2 : cd ~/gynecare-fixed/frontend && npm start"
+echo "  Terminal 1 : cd ~/Desktop/gynecare-fixed/backend && npm run dev"
+echo "  Terminal 2 : cd ~/Desktop/gynecare-fixed/frontend && npm start"
 echo ""
 echo "Puis ouvrez http://localhost:3000"
 echo ""

@@ -22,7 +22,7 @@ export const loginDoctor = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { userId: user.id, role: user.role, email: user.email },
       process.env.JWT_SECRET!,
-      { expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as unknown as number }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' } as SignOptions,
     );
     return res.json({
       success: true,
@@ -55,7 +55,7 @@ export const loginPatient = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { userId: user.id, role: user.role, email: user.email },
       process.env.JWT_SECRET!,
-      { expiresIn: (process.env.JWT_PATIENT_EXPIRES_IN || '12h') as unknown as number }
+      { expiresIn: process.env.JWT_PATIENT_EXPIRES_IN || '12h' } as SignOptions,
     );
     return res.json({
       success: true,

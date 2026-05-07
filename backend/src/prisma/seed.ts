@@ -53,6 +53,7 @@ async function main() {
     update: {},
     create: {
       userId: p1User.id,
+      doctorId: doctor.id,
       dateOfBirth: new Date('1990-03-15'),
       bloodType: 'A+',
       city: 'Paris',
@@ -81,6 +82,7 @@ async function main() {
     update: {},
     create: {
       userId: p2User.id,
+      doctorId: doctor.id,
       dateOfBirth: new Date('1985-07-22'),
       bloodType: 'O-',
       city: 'Lyon',

@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import routes from './routes';
 import { prisma } from './prisma';
 
@@ -37,6 +38,9 @@ app.use('/api/auth/patient/login', authLimiter);
 // ── Body parsing ──────────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// ── Fichiers statiques (uploads) ─────────────────────────────────
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ── Routes ────────────────────────────────────────────────────────
 app.use('/api', routes);
