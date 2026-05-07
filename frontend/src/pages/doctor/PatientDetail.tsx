@@ -57,6 +57,7 @@ const PatientDetail: React.FC = () => {
   const [prescMeds, setPrescMeds] = useState([{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
   const [prescNotes, setPrescNotes] = useState('');
   const [prescDate, setPrescDate] = useState(new Date().toISOString().slice(0, 10));
+  const [printLogoUrl, setPrintLogoUrl] = useState('');
   const [printPresc, setPrintPresc] = useState<any>(null);
   const [doctorProfile, setDoctorProfile] = useState<any>(null);
   const [editingPrescId, setEditingPrescId] = useState<string | null>(null);
@@ -170,8 +171,27 @@ const PatientDetail: React.FC = () => {
   };
 
   const handlePrintPresc = async (prescId: string) => {
-    try { const res = await doctorAPI.getPrescriptionById(prescId); setPrintPresc(res.data.data); setTimeout(() => window.print(), 300); }
-    catch { alert('Erreur lors du chargement'); }
+    try {
+      const res = await doctorAPI.getPrescriptionById(prescId);
+      const profRes = await doctorAPI.getProfile();
+      const logo = profRes.data.data?.logo;
+      setDoctorProfile(profRes.data.data);
+      setPrintPresc(res.data.data);
+      if (logo) {
+        try {
+          const r = await fetch(API_BASE.replace("/api", "") + logo);
+          const blob = await r.blob();
+          const url: string = await new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          setPrintLogoUrl(url);
+        } catch { setPrintLogoUrl(''); }
+      } else { setPrintLogoUrl(''); }
+      await new Promise(r => setTimeout(r, 300));
+      window.print();
+    } catch { alert('Erreur lors du chargement'); }
   };
 
   const openConsultModal = () => {
@@ -531,19 +551,21 @@ const PatientDetail: React.FC = () => {
         <div className="print-prescription">
           <div className="rx-header">
             <div className="rx-doctor">
-              {doctorProfile?.logo && <img className="rx-doctor-logo" src={`${API_BASE}${doctorProfile.logo}`} alt="Logo" />}
+              {printLogoUrl && <img className="rx-doctor-logo" src={printLogoUrl} alt="Logo" />}
               <div className="rx-doctor-info">
-                <h2>Dr {doctorProfile?.lastName || ''} {doctorProfile?.firstName || ''}</h2>
-                <div className="rx-specialty">{doctorProfile?.specialization || 'Gynécologie-Obstétrique'}</div>
+                {doctorProfile?.clinicName && <div className="rx-clinic-name">{doctorProfile.clinicName}</div>}
+                <h2>Dr {doctorProfile?.firstName || ''} {doctorProfile?.lastName || ''}</h2>
+                <div className="rx-specialty">{doctorProfile?.specialization || ''}</div>
+                {doctorProfile?.services && <div className="rx-services">{doctorProfile.services}</div>}
                 <div className="rx-contact">
-                  {doctorProfile?.phone && <span>{doctorProfile.phone}</span>}
-                  {doctorProfile?.email && <span> · {doctorProfile.email}</span>}
+                  {doctorProfile?.email && <span>{doctorProfile.email}</span>}
+                  {doctorProfile?.phone && <span> · {doctorProfile.phone}</span>}
+                </div>
+                <div className="rx-contact">
+                  {doctorProfile?.address}{doctorProfile?.city ? `, ${doctorProfile.city}` : ''}{doctorProfile?.postalCode ? ` ${doctorProfile.postalCode}` : ''}
                 </div>
                 {doctorProfile?.licenseNumber && <div className="rx-contact">N° Licence : {doctorProfile.licenseNumber}{doctorProfile?.rppsNumber ? ` · RPPS : ${doctorProfile.rppsNumber}` : ''}</div>}
               </div>
-            </div>
-            <div className="rx-clinic">
-              {doctorProfile?.clinicName && <><h3>{doctorProfile.clinicName}</h3><div className="rx-clinic-addr">{doctorProfile.address}{doctorProfile.city ? `, ${doctorProfile.city}` : ''}{doctorProfile.postalCode ? ` ${doctorProfile.postalCode}` : ''}</div></>}
             </div>
           </div>
           <div className="rx-title">Ordonnance Médicale</div>

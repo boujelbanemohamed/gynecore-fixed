@@ -49,6 +49,7 @@ model User {
   city          String?
   postalCode    String?
   logo          String?
+  services      String?
   country       String?
   patient         Patient?
   appointments    Appointment[] @relation("DoctorAppointments")

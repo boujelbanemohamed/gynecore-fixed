@@ -15,6 +15,7 @@ const Settings: React.FC = () => {
     specialization: '', licenseNumber: '', rppsNumber: '',
     clinicName: '', address: '', city: '', postalCode: '', country: 'France',
     logo: '',
+    services: '',
   });
 
   useEffect(() => {
@@ -24,7 +25,7 @@ const Settings: React.FC = () => {
         firstName: p.firstName || '', lastName: p.lastName || '', phone: p.phone || '', email: p.email || '',
         specialization: p.specialization || '', licenseNumber: p.licenseNumber || '', rppsNumber: p.rppsNumber || '',
         clinicName: p.clinicName || '', address: p.address || '', city: p.city || '', postalCode: p.postalCode || '',
-        country: p.country || 'France', logo: p.logo || '',
+        country: p.country || 'France', logo: p.logo || '', services: p.services || '',
       });
     }).catch(() => {});
   }, []);
@@ -42,6 +43,7 @@ const Settings: React.FC = () => {
         rppsNumber: form.rppsNumber, clinicName: form.clinicName,
         address: form.address, city: form.city, postalCode: form.postalCode,
         country: form.country,
+        services: form.services,
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -100,6 +102,10 @@ const Settings: React.FC = () => {
             <div className="form-group">
               <label className="form-label">N. RPPS</label>
               <input className="form-control" placeholder="Ex: 10123456789" value={form.rppsNumber} onChange={e => update({ rppsNumber: e.target.value })} />
+            </div>
+          <div className="form-group">
+              <label className="form-label">Services</label>
+              <textarea className="form-control" rows={3} placeholder="Ex: Echographie 3D - Fecondation In vitro - ..." value={form.services} onChange={e => update({ services: e.target.value })} />
             </div>
           </div>
 
