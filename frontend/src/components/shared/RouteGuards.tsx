@@ -1,0 +1,29 @@
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
+export const DoctorRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'PATIENT') return <Navigate to="/patient/dashboard" replace />;
+  return <Outlet />;
+};
+
+export const PatientRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
+  if (!user) return <Navigate to="/patient/login" replace />;
+  if (user.role !== 'PATIENT') return <Navigate to="/dashboard" replace />;
+  return <Outlet />;
+};
+
+export const PublicRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
+  if (user) {
+    if (user.role === 'PATIENT') return <Navigate to="/patient/dashboard" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Outlet />;
+};

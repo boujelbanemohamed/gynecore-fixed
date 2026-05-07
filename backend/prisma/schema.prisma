@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DOCTOR
+  ASSISTANT
+  PATIENT
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum ConsultationType {
+  FIRST_VISIT
+  FOLLOW_UP
+  EMERGENCY
+  ANNUAL_CHECKUP
+  PRENATAL
+  POSTNATAL
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  role           Role
+  firstName      String
+  lastName       String
+  phone          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  licenseNumber  String?
+  specialization String?
+  rppsNumber    String?
+  clinicName    String?
+  address       String?
+  city          String?
+  postalCode    String?
+  logo          String?
+  country       String?
+  patient        Patient?
+  appointments   Appointment[] @relation("DoctorAppointments")
+
+  @@map("users")
+}
+
+model Patient {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id])
+  dateOfBirth         DateTime
+  bloodType           String?
+  address             String?
+  city                String?
+  postalCode          String?
+  country             String    @default("France")
+  emergencyContact    String?
+  emergencyPhone      String?
+  allergies           String?
+  chronicDiseases     String?
+  familyHistory       String?
+  currentMedications  String?
+  lastMenstrualPeriod DateTime?
+  numberOfPregnancies Int       @default(0)
+  numberOfDeliveries  Int       @default(0)
+  contraceptionMethod String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  consultations       Consultation[]
+  prescriptions       Prescription[]
+  appointments        Appointment[]
+  documents           Document[]
+
+  @@map("patients")
+}
+
+model Consultation {
+  id             String           @id @default(cuid())
+  patientId      String
+  patient        Patient          @relation(fields: [patientId], references: [id])
+  date           DateTime
+  type           ConsultationType @default(FIRST_VISIT)
+  chiefComplaint String?
+  symptoms       String?
+  clinicalExam   String?
+  diagnosis      String?
+  treatment      String?
+  notes          String?
+  weight         Float?
+  bloodPressure  String?
+  temperature    Float?
+  nextVisit      DateTime?
+  isConfidential Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  prescriptions  Prescription[]
+
+  @@map("consultations")
+}
+
+model Prescription {
+  id             String        @id @default(cuid())
+  patientId      String
+  patient        Patient       @relation(fields: [patientId], references: [id])
+  consultationId String?
+  consultation   Consultation? @relation(fields: [consultationId], references: [id])
+  date           DateTime      @default(now())
+  medications    Json
+  notes          String?
+  isValid        Boolean       @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("prescriptions")
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  patientId String
+  patient   Patient           @relation(fields: [patientId], references: [id])
+  doctorId  String
+  doctor    User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  startTime DateTime
+  endTime   DateTime
+  type      ConsultationType  @default(FIRST_VISIT)
+  status    AppointmentStatus @default(SCHEDULED)
+  reason    String?
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@map("appointments")
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  name      String
+  type      String
+  url       String
+  size      Int?
+  mimeType  String?
+  createdAt DateTime @default(now())
+
+  @@map("documents")
+}

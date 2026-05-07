@@ -1,0 +1,113 @@
+import { Request, Response } from 'express';
+import { ConsultationType } from '@prisma/client';
+import { z } from 'zod';
+import { prisma } from '../prisma';
+
+const createConsultationSchema = z.object({
+  patientId: z.string().min(1, 'patientId requis'),
+  date: z.string().min(1, 'Date requise'),
+  type: z.nativeEnum(ConsultationType).optional(),
+  chiefComplaint: z.string().optional(),
+  symptoms: z.string().optional(),
+  clinicalExam: z.string().optional(),
+  diagnosis: z.string().optional(),
+  treatment: z.string().optional(),
+  notes: z.string().optional(),
+  weight: z.number().positive().optional(),
+  bloodPressure: z.string().optional(),
+  temperature: z.number().min(30).max(45).optional(),
+  nextVisit: z.string().optional(),
+  isConfidential: z.boolean().optional(),
+});
+
+const updateConsultationSchema = z.object({
+  date: z.string().optional(),
+  type: z.nativeEnum(ConsultationType).optional(),
+  chiefComplaint: z.string().optional(),
+  symptoms: z.string().optional(),
+  clinicalExam: z.string().optional(),
+  diagnosis: z.string().optional(),
+  treatment: z.string().optional(),
+  notes: z.string().optional(),
+  weight: z.number().positive().optional(),
+  bloodPressure: z.string().optional(),
+  temperature: z.number().min(30).max(45).optional(),
+  nextVisit: z.string().optional(),
+  isConfidential: z.boolean().optional(),
+});
+
+export const getConsultations = async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+    const patientId = req.query.patientId as string;
+    const where: Record<string, unknown> = {};
+    if (patientId) where.patientId = patientId;
+    const consultations = await prisma.consultation.findMany({
+      where,
+      include: { patient: { include: { user: { select: { firstName: true, lastName: true, email: true } } } } },
+      orderBy: { date: 'desc' },
+      take: limit,
+    });
+    return res.json({ success: true, data: { consultations } });
+  } catch (err) {
+    console.error('[getConsultations] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const createConsultation = async (req: Request, res: Response) => {
+  try {
+    const data = createConsultationSchema.parse(req.body);
+    const consultation = await prisma.consultation.create({
+      data: {
+        patientId: data.patientId,
+        date: new Date(data.date),
+        type: data.type,
+        chiefComplaint: data.chiefComplaint,
+        symptoms: data.symptoms,
+        clinicalExam: data.clinicalExam,
+        diagnosis: data.diagnosis,
+        treatment: data.treatment,
+        notes: data.notes,
+        weight: data.weight,
+        bloodPressure: data.bloodPressure,
+        temperature: data.temperature,
+        nextVisit: data.nextVisit ? new Date(data.nextVisit) : undefined,
+        isConfidential: data.isConfidential,
+      },
+      include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
+    });
+    return res.status(201).json({ success: true, data: consultation });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: err.errors[0].message });
+    }
+    console.error('[createConsultation] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const updateConsultation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = updateConsultationSchema.parse(req.body);
+    const consultation = await prisma.consultation.findUnique({ where: { id } });
+    if (!consultation) return res.status(404).json({ success: false, error: 'Consultation non trouvée' });
+    const updated = await prisma.consultation.update({
+      where: { id },
+      data: {
+        ...data,
+        date: data.date ? new Date(data.date) : undefined,
+        nextVisit: data.nextVisit ? new Date(data.nextVisit) : undefined,
+      },
+      include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
+    });
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: err.errors[0].message });
+    }
+    console.error('[updateConsultation] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
