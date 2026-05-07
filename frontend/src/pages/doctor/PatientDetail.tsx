@@ -68,7 +68,7 @@ const PatientDetail: React.FC = () => {
     }));
     setPrescMeds(meds.length > 0 ? meds : [{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
     setPrescNotes(p.notes || '');
-    setEditingPrescId(p.id);
+    setEditingPrescId(p.id); setPrescDate(p.date ? new Date(p.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
     setShowPrescModal(true);
   };
 
@@ -78,7 +78,7 @@ const PatientDetail: React.FC = () => {
     if (validMeds.length === 0) { alert('Ajoutez au moins un médicament'); return; }
     setPrescSaving(true);
     try {
-      await (doctorAPI as any).updatePrescription(editingPrescId, { medications: validMeds, notes: prescNotes || undefined, date: prescDate || undefined });
+      await (doctorAPI as any).updatePrescription(editingPrescId, { medications: validMeds, notes: prescNotes || undefined, date: prescDate || undefined, date: prescDate || undefined });
       load();
       setShowPrescModal(false);
       setEditingPrescId(null);
@@ -162,7 +162,7 @@ const PatientDetail: React.FC = () => {
     if (validMeds.length === 0) { alert('Ajoutez au moins un médicament'); return; }
     setPrescSaving(true);
     try {
-      await doctorAPI.createPrescription({ patientId: id, medications: validMeds, notes: prescNotes || undefined });
+      await doctorAPI.createPrescription({ patientId: id, medications: validMeds, notes: prescNotes || undefined, date: prescDate || undefined });
       load(); setShowPrescModal(false);
     } catch (err: any) { alert(err.response?.data?.error || 'Erreur lors de la création'); }
     finally { setPrescSaving(false); }
@@ -487,39 +487,17 @@ const PatientDetail: React.FC = () => {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowPrescModal(false)}>
           <div className="modal" style={{ maxWidth: 680 }}>
             <div className="modal-header">
-              <span className="modal-title">{editingPrescId ? 'Modifier l\'ordonnance' : 'Nouvelle ordonnance'}</span>
-              <button className="btn-close" onClick={() => setShowPrescModal(false)}>×</button>
+            <div className="form-group">
+              <label className="form-label">Date de l'ordonnance</label>
+              <input className="form-control" type="date" value={prescDate} onChange={e => setPrescDate(e.target.value)} />
             </div>
-            <div className="modal-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 40px', gap: 8, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
-                  <span>Médicament *</span><span>Dosage</span><span>Fréquence</span><span>Durée</span><span></span>
-                </div>
-                {prescMeds.map((med, i) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 40px', gap: 8, alignItems: 'center' }}>
-                    <input className="form-control" placeholder="Nom" value={med.name} onChange={e => updateMed(i, { name: e.target.value })} />
-                    <input className="form-control" placeholder="Dosage" value={med.dosage} onChange={e => updateMed(i, { dosage: e.target.value })} />
-                    <input className="form-control" placeholder="Fréquence" value={med.frequency} onChange={e => updateMed(i, { frequency: e.target.value })} />
-                    <input className="form-control" placeholder="Durée" value={med.duration} onChange={e => updateMed(i, { duration: e.target.value })} />
-                    <button className="btn-close" style={{ fontSize: 16 }} onClick={() => removeMedRow(i)} disabled={prescMeds.length <= 1}>×</button>
-                  </div>
-                ))}
-                <button className="btn btn-outline btn-sm" onClick={addMedRow} style={{ alignSelf: 'flex-start' }}>+ Ajouter un médicament</button>
-              </div>
-              <div className="form-group" style={{ marginTop: 16 }}>
-                              <div className="form-group">
-                <label className="form-label">Date de l'ordonnance</label>
-                <input className="form-control" type="date" value={prescDate} onChange={e => setPrescDate(e.target.value)} />
-              </div>
-              <div className="form-group" style={{ marginTop: 16 }}>
-                <label className="form-label">Notes</label>
-                <textarea className="form-control" rows={2} placeholder="Notes complémentaires..." value={prescNotes} onChange={e => setPrescNotes(e.target.value)} />
-              </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setShowPrescModal(false)}>Annuler</button>
               <button className="btn btn-primary" onClick={editingPrescId ? handleUpdatePresc : handleCreatePresc} disabled={prescSaving}>
-                {prescSaving ? 'Enregistrement...' : editingPrescId ? 'Modifier' : 'Créer l\'ordonnance'}
+                {prescSaving ? 'Enregistrement...' : editingPrescId ? 'Modifier' : 'Créer l'ordonnance'}
+              </button>
+            </div>                {prescSaving ? 'Enregistrement...' : editingPrescId ? 'Modifier' : 'Créer l\'ordonnance'}
               </button>
             </div>
           </div>
