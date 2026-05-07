@@ -34,8 +34,11 @@ const ALLOWED_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
 
 export const getAppointments = async (req: Request, res: Response) => {
   try {
+    const doctorId = req.user!.userId;
     const { start, end, patientId } = req.query;
-    const where: Record<string, unknown> = {};
+
+    // Restreint aux rendez-vous du médecin connecté
+    const where: Record<string, unknown> = { doctorId };
     if (start && end) where.startTime = { gte: new Date(start as string), lte: new Date(end as string) };
     if (patientId) where.patientId = patientId;
     const appointments = await prisma.appointment.findMany({
@@ -101,9 +104,11 @@ export const createAppointment = async (req: Request, res: Response) => {
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const doctorId = req.user!.userId;
     const { status } = updateStatusSchema.parse(req.body);
 
-    const current = await prisma.appointment.findUnique({ where: { id } });
+    // Vérifie que le RDV appartient à ce médecin
+    const current = await prisma.appointment.findFirst({ where: { id, doctorId } });
     if (!current) return res.status(404).json({ success: false, error: 'Rendez-vous non trouvé' });
 
     const allowed = ALLOWED_TRANSITIONS[current.status];

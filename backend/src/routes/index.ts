@@ -22,6 +22,7 @@ router.get('/doctor/patients', authenticate, authorizeDoctor, patientController.
 router.get('/doctor/patients/:id', authenticate, authorizeDoctor, patientController.getPatientById);
 router.post('/doctor/patients', authenticate, authorizeDoctor, patientController.createPatient);
 router.put('/doctor/patients/:id', authenticate, authorizeDoctor, patientController.updatePatient);
+router.delete('/doctor/patients/:id', authenticate, authorizeDoctor, patientController.deletePatient);
 
 router.get('/doctor/consultations', authenticate, authorizeDoctor, consultationController.getConsultations);
 router.post('/doctor/consultations', authenticate, authorizeDoctor, consultationController.createConsultation);

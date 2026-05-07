@@ -38,10 +38,16 @@ const updateConsultationSchema = z.object({
 
 export const getConsultations = async (req: Request, res: Response) => {
   try {
+    const doctorId = req.user!.userId;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
     const patientId = req.query.patientId as string;
-    const where: Record<string, unknown> = {};
+
+    // Restreint aux patients du médecin connecté
+    const where: Record<string, unknown> = {
+      patient: { doctorId },
+    };
     if (patientId) where.patientId = patientId;
+
     const consultations = await prisma.consultation.findMany({
       where,
       include: { patient: { include: { user: { select: { firstName: true, lastName: true, email: true } } } } },
@@ -57,7 +63,13 @@ export const getConsultations = async (req: Request, res: Response) => {
 
 export const createConsultation = async (req: Request, res: Response) => {
   try {
+    const doctorId = req.user!.userId;
     const data = createConsultationSchema.parse(req.body);
+
+    // Vérifie que le patient appartient à ce médecin
+    const patient = await prisma.patient.findFirst({ where: { id: data.patientId, doctorId } });
+    if (!patient) return res.status(404).json({ success: false, error: 'Patiente non trouvée' });
+
     const consultation = await prisma.consultation.create({
       data: {
         patientId: data.patientId,
@@ -90,8 +102,13 @@ export const createConsultation = async (req: Request, res: Response) => {
 export const updateConsultation = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const doctorId = req.user!.userId;
     const data = updateConsultationSchema.parse(req.body);
-    const consultation = await prisma.consultation.findUnique({ where: { id } });
+
+    // Vérifie que la consultation appartient à un patient de ce médecin
+    const consultation = await prisma.consultation.findFirst({
+      where: { id, patient: { doctorId } },
+    });
     if (!consultation) return res.status(404).json({ success: false, error: 'Consultation non trouvée' });
     const updated = await prisma.consultation.update({
       where: { id },

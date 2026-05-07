@@ -33,6 +33,7 @@ export const doctorAPI = {
   getPatient: (id: string) => api.get(`/doctor/patients/${id}`),
   createPatient: (data: unknown) => api.post('/doctor/patients', data),
   updatePatient: (id: string, data: unknown) => api.put(`/doctor/patients/${id}`, data),
+  deletePatient: (id: string) => api.delete(`/doctor/patients/${id}`),
   getConsultations: (params?: Record<string, unknown>) => api.get('/doctor/consultations', { params }),
   createConsultation: (data: unknown) => api.post('/doctor/consultations', data),
   updateConsultation: (id: string, data: unknown) => api.put(`/doctor/consultations/${id}`, data),

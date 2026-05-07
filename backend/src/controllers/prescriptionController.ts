@@ -20,8 +20,12 @@ const createPrescriptionSchema = z.object({
 
 export const getPrescriptions = async (req: Request, res: Response) => {
   try {
+    const doctorId = req.user!.userId;
     const patientId = req.query.patientId as string;
-    const where = patientId ? { patientId } : {};
+
+    // Restreint aux prescriptions des patients du médecin connecté
+    const where: Record<string, unknown> = { patient: { doctorId } };
+    if (patientId) where.patientId = patientId;
     const prescriptions = await prisma.prescription.findMany({
       where,
       include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } }, consultation: { select: { id: true, date: true, type: true } } },
@@ -36,7 +40,13 @@ export const getPrescriptions = async (req: Request, res: Response) => {
 
 export const createPrescription = async (req: Request, res: Response) => {
   try {
+    const doctorId = req.user!.userId;
     const data = createPrescriptionSchema.parse(req.body);
+
+    // Vérifie que le patient appartient à ce médecin
+    const patient = await prisma.patient.findFirst({ where: { id: data.patientId, doctorId } });
+    if (!patient) return res.status(404).json({ success: false, error: 'Patiente non trouvée' });
+
     const prescription = await prisma.prescription.create({
       data: { patientId: data.patientId, consultationId: data.consultationId, medications: data.medications, notes: data.notes, expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined },
       include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
@@ -52,10 +62,14 @@ export const createPrescription = async (req: Request, res: Response) => {
 export const updatePrescription = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const doctorId = req.user!.userId;
     const { medications, notes } = req.body;
     if (!medications || !Array.isArray(medications) || medications.length === 0) {
       return res.status(400).json({ success: false, error: 'Au moins un medicament requis' });
     }
+    // Vérifie que la prescription appartient à un patient de ce médecin
+    const existing = await prisma.prescription.findFirst({ where: { id, patient: { doctorId } } });
+    if (!existing) return res.status(404).json({ success: false, error: 'Ordonnance non trouvée' });
     const prescription = await prisma.prescription.update({
       where: { id },
       data: { medications, notes: notes || null },
@@ -87,8 +101,9 @@ export const getPatientPrescriptions = async (req: Request, res: Response) => {
 export const getPrescriptionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const prescription = await prisma.prescription.findUnique({
-      where: { id },
+    const doctorId = req.user!.userId;
+    const prescription = await prisma.prescription.findFirst({
+      where: { id, patient: { doctorId } }, // Vérifie l'appartenance au médecin
       include: { patient: { include: { user: { select: { firstName: true, lastName: true, email: true, phone: true } } } }, consultation: { select: { id: true, date: true, type: true, diagnosis: true } } },
     });
     if (!prescription) return res.status(404).json({ success: false, error: 'Ordonnance non trouvee' });

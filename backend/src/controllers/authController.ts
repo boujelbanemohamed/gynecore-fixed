@@ -21,7 +21,7 @@ export const loginDoctor = async (req: Request, res: Response) => {
     if (!valid) return res.status(401).json({ success: false, error: 'Identifiants invalides' });
     const token = jwt.sign(
       { userId: user.id, role: user.role, email: user.email },
-      process.env.JWT_SECRET || 'fallback-dev-secret-change-me',
+      process.env.JWT_SECRET!,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as unknown as number }
     );
     return res.json({
@@ -54,7 +54,7 @@ export const loginPatient = async (req: Request, res: Response) => {
     if (!valid) return res.status(401).json({ success: false, error: 'Identifiants invalides' });
     const token = jwt.sign(
       { userId: user.id, role: user.role, email: user.email },
-      process.env.JWT_SECRET || 'fallback-dev-secret-change-me',
+      process.env.JWT_SECRET!,
       { expiresIn: (process.env.JWT_PATIENT_EXPIRES_IN || '12h') as unknown as number }
     );
     return res.json({

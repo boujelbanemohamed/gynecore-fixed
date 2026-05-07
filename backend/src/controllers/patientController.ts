@@ -64,17 +64,23 @@ function formatZodError(err: unknown): string {
 
 export const getPatients = async (req: Request, res: Response) => {
   try {
+    const doctorId = req.user!.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const search = req.query.search as string;
     const skip = (page - 1) * limit;
+
+    // Filtre par médecin + exclut les patients archivés
+    const baseWhere = { doctorId, isArchived: false };
     const where = search ? {
+      ...baseWhere,
       OR: [
         { user: { firstName: { contains: search, mode: 'insensitive' as const } } },
         { user: { lastName: { contains: search, mode: 'insensitive' as const } } },
         { user: { email: { contains: search, mode: 'insensitive' as const } } },
       ],
-    } : {};
+    } : baseWhere;
+
     const [patients, total] = await Promise.all([
       prisma.patient.findMany({
         where, skip, take: limit,
@@ -99,8 +105,9 @@ export const getPatients = async (req: Request, res: Response) => {
 export const getPatientById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const patient = await prisma.patient.findUnique({
-      where: { id },
+    const doctorId = req.user!.userId;
+    const patient = await prisma.patient.findFirst({
+      where: { id, doctorId }, // Vérifie l'appartenance au médecin
       include: {
         user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
         consultations: { orderBy: { date: 'desc' }, take: 20 },
@@ -137,6 +144,7 @@ export const createPatient = async (req: Request, res: Response) => {
         role: Role.PATIENT,
         patient: {
           create: {
+            doctorId: req.user!.userId, // Associé au médecin créateur
             dateOfBirth: new Date(data.dateOfBirth),
             bloodType: data.bloodType,
             address: data.address,
@@ -172,8 +180,13 @@ export const createPatient = async (req: Request, res: Response) => {
 export const updatePatient = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const doctorId = req.user!.userId;
     const data = updatePatientSchema.parse(req.body);
     const { email, firstName, lastName, phone, dateOfBirth, lastMenstrualPeriod, ...patientData } = data;
+
+    // Vérifie que le patient appartient bien à ce médecin
+    const existing = await prisma.patient.findFirst({ where: { id, doctorId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'Patiente non trouvée' });
 
     const patient = await prisma.patient.update({
       where: { id },
@@ -202,21 +215,43 @@ export const updatePatient = async (req: Request, res: Response) => {
   }
 };
 
-export const getDashboardStats = async (_req: Request, res: Response) => {
+// Soft delete : archive la patiente sans la supprimer de la BDD
+export const deletePatient = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
+    const doctorId = req.user!.userId;
+
+    const existing = await prisma.patient.findFirst({ where: { id, doctorId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'Patiente non trouvée' });
+
+    await prisma.patient.update({ where: { id }, data: { isArchived: true } });
+    return res.json({ success: true, message: 'Patiente archivée' });
+  } catch (err) {
+    console.error('[deletePatient] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const doctorId = req.user!.userId;
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
     const [totalPatients, todayAppointments, monthConsultations, pendingAppointments] = await Promise.all([
-      prisma.patient.count(),
-      prisma.appointment.count({ where: { startTime: { gte: startOfDay, lte: endOfDay } } }),
-      prisma.consultation.count({ where: { date: { gte: startOfMonth } } }),
-      prisma.appointment.count({ where: { status: AppointmentStatus.SCHEDULED } }),
+      prisma.patient.count({ where: { doctorId, isArchived: false } }),
+      prisma.appointment.count({ where: { doctorId, startTime: { gte: startOfDay, lte: endOfDay } } }),
+      prisma.consultation.count({ where: { patient: { doctorId }, date: { gte: startOfMonth } } }),
+      prisma.appointment.count({ where: { doctorId, status: AppointmentStatus.SCHEDULED } }),
     ]);
     const upcomingAppointments = await prisma.appointment.findMany({
-      where: { startTime: { gte: new Date() }, status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED] } },
+      where: {
+        doctorId,
+        startTime: { gte: new Date() },
+        status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED] },
+      },
       include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
       orderBy: { startTime: 'asc' },
       take: 5,

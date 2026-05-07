@@ -3,10 +3,9 @@ import { prisma } from '../prisma';
 
 export const getMyDossier = async (req: Request, res: Response) => {
   try {
-    const patient = await prisma.patient.findUnique({ where: { userId: req.user!.userId } });
-    if (!patient) return res.status(404).json({ success: false, error: 'Dossier non trouvé' });
+    // Une seule requête : userId suffit pour cibler le bon patient
     const dossier = await prisma.patient.findUnique({
-      where: { id: patient.id },
+      where: { userId: req.user!.userId },
       include: {
         user: { select: { firstName: true, lastName: true, email: true, phone: true } },
         consultations: {
@@ -21,6 +20,7 @@ export const getMyDossier = async (req: Request, res: Response) => {
         },
       },
     });
+    if (!dossier) return res.status(404).json({ success: false, error: 'Dossier non trouvé' });
     return res.json({ success: true, data: dossier });
   } catch (err) {
     console.error('[getMyDossier] Erreur:', err);

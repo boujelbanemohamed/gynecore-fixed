@@ -9,7 +9,7 @@ import { prisma } from './prisma';
 dotenv.config();
 
 // Vérification des variables d'environnement critiques
-const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'CORS_ORIGIN'];
 const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
 if (missingEnvVars.length > 0) {
   console.error(`❌ Variables d'environnement manquantes : ${missingEnvVars.join(', ')}`);
@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 4000;
 
 // ── Sécurité ──────────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
 
 // ── Rate limiting ─────────────────────────────────────────────────
 const authLimiter = rateLimit({
