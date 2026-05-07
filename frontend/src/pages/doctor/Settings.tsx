@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { doctorAPI } from '../../services/api';
 
-const IMG_BASE = 'http://localhost:4000';
+const IMG_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -156,7 +156,7 @@ const Settings: React.FC = () => {
                   {form.logo ? 'Changer le logo' : 'Telecharger un logo'}
                 </button>
                 {form.logo && (
-                  <button type="button" className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={() => update({ logo: '' })}>
+                  <button type="button" className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={async () => { try { await doctorAPI.updateProfile({ logo: null as any }); update({ logo: '' }); } catch { alert("Erreur lors de la suppression du logo"); } }}>
                     Supprimer
                   </button>
                 )}

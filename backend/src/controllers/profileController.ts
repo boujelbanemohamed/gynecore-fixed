@@ -14,6 +14,7 @@ const updateProfileSchema = z.object({
   city:           z.string().optional(),
   postalCode:     z.string().optional(),
   country:        z.string().optional(),
+  logo:           z.string().max(500).nullable().optional(),
 });
 
 export const getProfile = async (req: Request, res: Response) => {
