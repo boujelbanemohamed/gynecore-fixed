@@ -188,9 +188,9 @@ const Calendar: React.FC = () => {
       {/* CALENDAR GRID */}
       <div className="card">
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-          <button className="btn btn-outline btn-sm" onClick={()=>setCurrentDate(new Date(y,m-1))}>\u2190</button>
+          <button className="btn btn-outline btn-sm" onClick={()=>setCurrentDate(new Date(y,m-1))}>←</button>
           <span style={{fontWeight:500,fontSize:16}}>{months[m]} {y}</span>
-          <button className="btn btn-outline btn-sm" onClick={()=>setCurrentDate(new Date(y,m+1))}>\u2192</button>
+          <button className="btn btn-outline btn-sm" onClick={()=>setCurrentDate(new Date(y,m+1))}>→</button>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:4}}>
           {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map(d=>
@@ -238,7 +238,7 @@ const Calendar: React.FC = () => {
           ?<p className="text-muted text-sm">Cliquez sur un jour pour voir les rendez-vous</p>
           :!selectedApts.length
             ?<div className="empty-state" style={{padding:'24px 0'}}>
-                <div className="empty-icon">\ud83d\udcc5</div>
+                <div className="empty-icon">📅</div>
                 <p>Aucun rendez-vous</p>
                 <button className="btn btn-primary" style={{marginTop:12}} onClick={openNewAptModal}>+ Planifier un rendez-vous</button>
               </div>
@@ -250,7 +250,7 @@ const Calendar: React.FC = () => {
                         <div>
                           <div style={{fontWeight:500,fontSize:14}}>{apt.patient.user.firstName} {apt.patient.user.lastName}</div>
                           <div className="text-sm text-muted" style={{marginTop:3}}>
-                            {new Date(apt.startTime).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} \u00b7 {typeLabels[apt.type]||apt.type}
+                            {new Date(apt.startTime).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} · {typeLabels[apt.type]||apt.type}
                           </div>
                           {apt.reason&&<div className="text-sm" style={{marginTop:4,color:'var(--text-secondary)'}}>Motif : {apt.reason}</div>}
                         </div>
@@ -282,7 +282,7 @@ const Calendar: React.FC = () => {
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:580}}>
             <div className="modal-header">
               <h3>Nouveau rendez-vous</h3>
-              <button className="btn-close" onClick={()=>!loading&&setShowModal(false)}>\u00d7</button>
+              <button className="btn-close" onClick={()=>!loading&&setShowModal(false)}>×</button>
             </div>
             <div className="modal-body">
               {error && <div className="alert alert-error" style={{marginBottom:16}}>{error}</div>}
@@ -321,7 +321,7 @@ const Calendar: React.FC = () => {
                                 <div style={{fontWeight:500,fontSize:13}}>{p.user?.firstName || p.firstName} {p.user?.lastName || p.lastName}</div>
                                 <div className="text-sm text-muted" style={{fontSize:11}}>
                                   {p.user?.email || p.email}
-                                  {p.dateOfBirth && <span> \u00b7 N\u00e9e le {new Date(p.dateOfBirth).toLocaleDateString('fr-FR')}</span>}
+                                  {p.dateOfBirth && <span> · Née le {new Date(p.dateOfBirth).toLocaleDateString('fr-FR')}</span>}
                                 </div>
                               </div>
                             </div>
@@ -329,7 +329,7 @@ const Calendar: React.FC = () => {
                         </div>
                       )}
                       <button className="btn btn-outline btn-sm" style={{marginTop:8}} onClick={()=>{setShowNewPatient(true);setError('');}}>
-                        + Cr\u00e9er une nouvelle patiente
+                        + Créer une nouvelle patiente
                       </button>
                     </>
                   )}
@@ -343,7 +343,7 @@ const Calendar: React.FC = () => {
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                     <div>
-                      <label className="form-label" style={{fontSize:12}}>Pr\u00e9nom *</label>
+                      <label className="form-label" style={{fontSize:12}}>Prénom *</label>
                       <input className="form-control" value={newPatient.firstName}
                         onChange={e=>setNewPatient({...newPatient,firstName:e.target.value})} />
                     </div>
@@ -358,7 +358,7 @@ const Calendar: React.FC = () => {
                         onChange={e=>setNewPatient({...newPatient,email:e.target.value})} />
                     </div>
                     <div>
-                      <label className="form-label" style={{fontSize:12}}>T\u00e9l\u00e9phone</label>
+                      <label className="form-label" style={{fontSize:12}}>Téléphone</label>
                       <input className="form-control" value={newPatient.phone}
                         onChange={e=>setNewPatient({...newPatient,phone:e.target.value})} />
                     </div>
@@ -390,7 +390,7 @@ const Calendar: React.FC = () => {
               {/* APPOINTMENT DETAILS */}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                 <div>
-                  <label className="form-label">Heure de d\u00e9but *</label>
+                  <label className="form-label">Heure de début *</label>
                   <input className="form-control" type="datetime-local" value={aptForm.startTime}
                     onChange={e=>setAptForm({...aptForm,startTime:e.target.value})} />
                 </div>
