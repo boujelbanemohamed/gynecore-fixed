@@ -297,7 +297,6 @@ const PatientDetail: React.FC = () => {
       const pAge = presc.patient?.dateOfBirth ? Math.floor((Date.now() - new Date(presc.patient.dateOfBirth).getTime()) / (365.25*24*60*60*1000)) + ' ans' : '--';
       const logoUrl = doctorProfile?.logo ? (API_BASE.replace('/api','') + doctorProfile.logo) : '';
       let logoHtml = '';
-      const fullAddr = [(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', ');
       if (logoUrl) {
         try {
           const imgRes = await fetch(logoUrl);
@@ -527,7 +526,6 @@ const PatientDetail: React.FC = () => {
         '<h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
         '<div class="rx-specialty">' + (doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
         '<div class="rx-services">' + (doctorProfile?.services||'') + '</div>' +
-        '<div class="rx-address">' + fullAddr + '</div>' +
         '<div class="rx-contact">' + (doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + (doctorProfile?.email||'') + '</div>' +
         '</div></div>' +
         '<div class="rx-title">' + title + '</div>' +

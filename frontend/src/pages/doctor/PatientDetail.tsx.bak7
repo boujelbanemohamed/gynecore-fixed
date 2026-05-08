@@ -222,41 +222,39 @@ const PatientDetail: React.FC = () => {
 
 
   const PRINT_CSS = `
-    @page { size: A4; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 210mm; }
-    body {
-      font-family: Arial, Helvetica, sans-serif; color: #1a1a2e;
-      padding: 10mm 12mm;
-      background: white;
-    }
+    body { font-family: Arial, Helvetica, sans-serif; color: #1a1a2e; padding: 12mm 15mm; background: white; }
+    @page { size: A4; margin: 12mm 15mm; }
     @media print {
+      body, body * { visibility: visible !important; }
       body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
-    .rx-header { display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px; border-bottom: 3px solid #1a5c4a; margin-bottom: 14px; }
-    .rx-doctor-logo { width: 70px; height: 70px; border-radius: 50%; object-fit: contain; border: 2px solid #1a5c4a; }
-    .rx-info h2 { font-size: 17px; font-weight: 700; color: #1a5c4a; margin: 0; }
-    .rx-clinic-name { font-size: 12px; color: #1a5c4a; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 2px; }
-    .rx-specialty { font-size: 13px; color: #333; margin: 1px 0; }
-    .rx-services { font-size: 11px; color: #888; font-style: italic; margin: 1px 0; }
-    .rx-address { font-size: 12px; color: #555; margin: 1px 0; }
-    .rx-contact { font-size: 12px; color: #777; margin-top: 2px; }
-    .rx-title { text-align: center; font-size: 20px; font-weight: 700; color: #1a5c4a; text-transform: uppercase; letter-spacing: 2px; margin: 18px 0 14px 0; padding: 10px 0; border: 2px solid #1a5c4a; border-radius: 6px; background: #f0faf6; }
-    .rx-patient { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8f9fa; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+    .rx-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 0 12px 0; border-bottom: 3px solid #1a5c4a; margin-bottom: 16px; }
+    .rx-doctor { display: flex; align-items: center; gap: 14px; }
+    .rx-doctor-logo { width: 64px; height: 64px; border-radius: 50%; object-fit: contain; border: 2px solid #1a5c4a; }
+    .rx-doctor-info h2 { font-size: 18px; font-weight: 700; color: #1a5c4a; margin: 0; }
+    .rx-specialty { font-size: 13px; color: #555; margin: 2px 0; }
+    .rx-contact { font-size: 12px; color: #777; }
+    .rx-clinic { text-align: right; }
+    .rx-clinic h3 { font-size: 15px; font-weight: 600; color: #1a5c4a; margin: 0; }
+    .rx-clinic-addr { font-size: 12px; color: #555; margin-top: 4px; }
+    .rx-title { text-align: center; font-size: 20px; font-weight: 700; color: #1a5c4a; text-transform: uppercase; letter-spacing: 2px; margin: 20px 0 16px 0; padding: 10px 0; border: 2px solid #1a5c4a; border-radius: 6px; background: #f0faf6; }
+    .rx-patient { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8f9fa; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
     .rx-patient strong { color: #1a5c4a; }
-    .rx-date-place { margin-bottom: 14px; font-size: 13px; color: #555; }
-    .rx-meds-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .rx-date-place { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 13px; color: #555; }
+    .rx-meds-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
     .rx-meds-table thead th { background: #1a5c4a; color: white; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
     .rx-meds-table thead th:first-child { border-radius: 6px 0 0 0; }
     .rx-meds-table thead th:last-child { border-radius: 0 6px 0 0; }
     .rx-meds-table tbody td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #e8eaed; }
     .rx-meds-table tbody tr:nth-child(even) { background: #f8faf9; }
-    .rx-notes { padding: 12px 16px; background: #fef9ef; border-left: 4px solid #e67e22; border-radius: 0 6px 6px 0; font-size: 13px; margin-bottom: 16px; color: #555; }
+    .rx-notes { padding: 12px 16px; background: #fef9ef; border-left: 4px solid #e67e22; border-radius: 0 6px 6px 0; font-size: 13px; margin-bottom: 20px; color: #555; }
     .rx-notes strong { color: #333; }
-    .rx-footer { margin-top: 30px; padding-top: 14px; border-top: 3px solid #1a5c4a; }
+    .rx-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px; padding-top: 16px; border-top: 3px solid #1a5c4a; }
     .rx-signature { text-align: center; }
     .rx-sig-line { width: 200px; border-top: 1px solid #999; margin-top: 60px; padding-top: 6px; font-size: 12px; color: #555; }
-    .cert-body { margin: 18px 0; line-height: 1.8; }
+    .rx-footer-info { font-size: 11px; color: #888; text-align: right; line-height: 1.6; }
+    .cert-body { margin: 20px 0; line-height: 1.8; }
     .cert-body p { margin: 6px 0; font-size: 13px; }
     table { width: 100%; border-collapse: collapse; }
   `;
@@ -295,38 +293,22 @@ const PatientDetail: React.FC = () => {
       ).join('');
       const pName = (presc.patient?.user?.firstName||'') + ' ' + (presc.patient?.user?.lastName||'');
       const pAge = presc.patient?.dateOfBirth ? Math.floor((Date.now() - new Date(presc.patient.dateOfBirth).getTime()) / (365.25*24*60*60*1000)) + ' ans' : '--';
-      const logoUrl = doctorProfile?.logo ? (API_BASE.replace('/api','') + doctorProfile.logo) : '';
-      let logoHtml = '';
-      const fullAddr = [(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', ');
-      if (logoUrl) {
-        try {
-          const imgRes = await fetch(logoUrl);
-          const blob = await imgRes.blob();
-          logoHtml = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve('<img style="width:64px;height:64px;border-radius:50%;object-fit:contain;border:2px solid #1a5c4a;" src="' + reader.result + '" />');
-            reader.readAsDataURL(blob);
-          });
-        } catch { logoHtml = ''; }
-      }
+      const logoHtml = doctorProfile?.logo ? '<img style="width:64px;height:64px;border-radius:50%;object-fit:contain;border:2px solid #1a5c4a;" src="' + API_BASE + doctorProfile.logo + '" />' : '';
       const clinicHtml = doctorProfile?.clinicName ? '<div class="rx-clinic"><h3>' + doctorProfile.clinicName + '</h3><div class="rx-clinic-addr">' + (doctorProfile.address||'') + (doctorProfile.city?', ':'') + (doctorProfile.city||'') + (doctorProfile.postalCode?' ':'') + (doctorProfile.postalCode||'') + '</div></div>' : '';
       const notesHtml = presc.notes ? '<div class="rx-notes"><strong>Notes :</strong> ' + presc.notes + '</div>' : '';
       const licHtml = doctorProfile?.licenseNumber ? '<div class="rx-contact">N Licence : ' + doctorProfile.licenseNumber + (doctorProfile?.rppsNumber ? ' . RPPS : ' + doctorProfile.rppsNumber : '') + '</div>' : '';
       const html = '<div>' +
-        '<div class="rx-header">' + logoHtml +
-        '<div class="rx-info">' +
-        '<div class="rx-clinic-name">' + (doctorProfile?.clinicName||'') + '</div>' +
-        '<h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
+        '<div class="rx-header"><div class="rx-doctor">' + logoHtml +
+        '<div class="rx-doctor-info"><h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
         '<div class="rx-specialty">' + (doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
-        '<div class="rx-services">' + (doctorProfile?.services||'') + '</div>' +
         '<div class="rx-contact">' + (doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + (doctorProfile?.email||'') + '</div>' +
-        '</div></div>' +
+        licHtml + '</div></div>' + clinicHtml + '</div>' +
         '<div class="rx-title">Ordonnance Medicale</div>' +
         '<div class="rx-patient"><div><strong>Patiente :</strong> ' + pName + '</div><div><strong>Age :</strong> ' + pAge + '</div></div>' +
-        '<div class="rx-date-place">Fait a ' + (doctorProfile?.city||'') + ', le ' + new Date(presc.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</div>' +
+        '<div class="rx-date-place"><span>Fait le ' + new Date(presc.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</span><span>A ' + (doctorProfile?.city||'') + '</span></div>' +
         '<table class="rx-meds-table"><thead><tr><th>Medicament</th><th>Dosage</th><th>Frequence</th><th>Duree</th><th>Instructions</th></tr></thead><tbody>' + medsRows + '</tbody></table>' +
         notesHtml +
-        '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
+        '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div><div class="rx-footer-info"><div>GyneCare</div><div>Document genere le ' + new Date().toLocaleDateString('fr-FR') + '</div></div></div>' +
         '</div>';
       printInIframe(html);
     } catch { alert('Erreur lors du chargement'); }
@@ -407,7 +389,7 @@ const PatientDetail: React.FC = () => {
 
   const updCert = (patch: Record<string,string>) => setCertForm(prev => ({ ...prev, ...patch }));
 
-  const handleSaveCert = async () => {
+  const handleCreateCert = async () => {
     setCertSaving(true);
     try {
       await (doctorAPI as any).createCertificate({ patientId: id, type: certType, content: certForm });
@@ -418,32 +400,6 @@ const PatientDetail: React.FC = () => {
     } finally { setCertSaving(false); }
   };
 
-  
-  
-    const [editingCertId, setEditingCertId] = useState<string | null>(null);
-
-  const handleUpdateCert = async () => {
-    if (!editingCertId) return;
-    setCertSaving(true);
-    try {
-      await (doctorAPI as any).updateCertificate(editingCertId, { type: certType, content: certForm });
-      loadCertificates();
-      setShowCertModal(false);
-      setEditingCertId(null);
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Erreur lors de la modification');
-    } finally { setCertSaving(false); }
-  };
-  const handleEditCert = (cert: any) => {
-    setCertType(cert.type);
-    setEditingCertId(cert.id);
-    const fields = certFields[cert.type] || [];
-    const data = typeof cert.content === 'string' ? JSON.parse(cert.content || '{}') : (cert.content || {});
-    const defaults: Record<string,string> = {};
-    fields.forEach((f: any) => { defaults[f.key] = (data[f.key] || '') + ''; });
-    setCertForm(defaults);
-    setShowCertModal(true);
-  };
   const handleDeleteCert = async (certId: string) => {
     try {
       await (doctorAPI as any).deleteCertificate(certId);
@@ -474,20 +430,9 @@ const PatientDetail: React.FC = () => {
       const c = typeof cert.content === 'string' ? JSON.parse(cert.content || '{}') : (cert.content || {});
       const pName = (cert.patient?.user?.firstName||'') + ' ' + (cert.patient?.user?.lastName||'');
       const pAge = cert.patient?.dateOfBirth ? Math.floor((Date.now() - new Date(cert.patient.dateOfBirth).getTime()) / (365.25*24*60*60*1000)) + ' ans' : '--';
-      const fullAddr = [(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', ');
-      let logoHtml = '';
-      if (doctorProfile?.logo) {
-        try {
-          const imgUrl = API_BASE.replace('/api','') + doctorProfile.logo;
-          const imgRes = await fetch(imgUrl);
-          const blob = await imgRes.blob();
-          logoHtml = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve('<img class="rx-doctor-logo" src="' + reader.result + '" />');
-            reader.readAsDataURL(blob);
-          });
-        } catch { logoHtml = ''; }
-      }
+      const logoHtml = doctorProfile?.logo ? '<img style="width:64px;height:64px;border-radius:50%;object-fit:contain;border:2px solid #1a5c4a;" src="' + API_BASE + doctorProfile.logo + '" />' : '';
+      const clinicHtml = doctorProfile?.clinicName ? '<div class="rx-clinic"><h3>' + doctorProfile.clinicName + '</h3><div class="rx-clinic-addr">' + (doctorProfile.address||'') + (doctorProfile.city?', ':'') + (doctorProfile.city||'') + (doctorProfile.postalCode?' ':'') + (doctorProfile.postalCode||'') + '</div></div>' : '';
+      const licHtml = doctorProfile?.licenseNumber ? '<div class="rx-contact">N Licence : ' + doctorProfile.licenseNumber + (doctorProfile?.rppsNumber ? ' . RPPS : ' + doctorProfile.rppsNumber : '') + '</div>' : '';
       const fmt = (d: string) => d ? new Date(d).toLocaleDateString('fr-FR') : '.......................................';
       const fld = (v: string) => v || '.......................................';
       let bodyHtml = '';
@@ -522,17 +467,13 @@ const PatientDetail: React.FC = () => {
       const title = certTitles[cert.type] || 'CERTIFICAT MEDICAL';
       const html = '<div>' +
         '<div class="rx-header"><div class="rx-doctor">' + logoHtml +
-        '<div class="rx-doctor-info">' +
-        '<div class="rx-clinic-name">' + (doctorProfile?.clinicName||'') + '</div>' +
-        '<h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
+        '<div class="rx-doctor-info"><h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
         '<div class="rx-specialty">' + (doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
-        '<div class="rx-services">' + (doctorProfile?.services||'') + '</div>' +
-        '<div class="rx-address">' + fullAddr + '</div>' +
         '<div class="rx-contact">' + (doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + (doctorProfile?.email||'') + '</div>' +
-        '</div></div>' +
+        licHtml + '</div></div>' + clinicHtml + '</div>' +
         '<div class="rx-title">' + title + '</div>' +
         '<div class="rx-patient"><div><strong>Patiente :</strong> ' + pName + '</div><div><strong>Age :</strong> ' + pAge + '</div></div>' +
-        '<div class="rx-date-place">Fait a ' + (doctorProfile?.city||'Tunis') + ', le ' + new Date(cert.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</div>' +
+        '<div class="rx-date-place"><span>Fait a ' + (doctorProfile?.city||'Tunis') + ', le ' + new Date(cert.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</span></div>' +
         '<div class="cert-body">' + bodyHtml + '</div>' +
         '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
         '</div>';
@@ -738,7 +679,6 @@ const PatientDetail: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-outline btn-sm" onClick={() => handlePrintCert(cert.id)}>🖨 Imprimer</button>
-                      <button className="btn btn-outline btn-sm" onClick={() => handleEditCert(cert)}>✏ Modifier</button>
                       <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#f5c6c3' }} onClick={() => setConfirmAction({type:'certificate',id:cert.id,label:'ce certificat'})}>Supprimer</button>
                     </div>
                   </div>
@@ -1002,7 +942,7 @@ const PatientDetail: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setShowCertModal(false)}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleSaveCert} disabled={certSaving}>
+              <button className="btn btn-primary" onClick={handleCreateCert} disabled={certSaving}>
                 {certSaving ? 'Enregistrement...' : 'Generer le certificat'}
               </button>
             </div>
