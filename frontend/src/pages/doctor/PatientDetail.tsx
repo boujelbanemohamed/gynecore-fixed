@@ -542,8 +542,8 @@ const PatientDetail: React.FC = () => {
           bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie la grossesse de :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
             '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p>' +
-            '<p><strong>Terme actuel :</strong> ' + fld(c.currentTerm) + ' SA</p>' +
-            '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p></div>' +
+            '<p><strong>Terme actuel (Semaines d\'Amenorrhee) :</strong> ' + fld(c.currentTerm) + ' SA</p>' +
+            '<p><strong>DPA (Date Prevue d\'Accouchement) :</strong> ' + fmt(c.dpa) + '</p></div>' +
             '<p>En consequence, je recommande la mesure suivante :</p>' +
             '<div class="cert-details"><p><strong>Mesure :</strong> ' + fld(c.measure) + '</p>' +
             '<p><strong>Duree :</strong> ' + (c.durationDate ? 'jusqu\'au ' + fmt(c.durationDate) : '') + (c.durationDate && c.duration ? ' - ' : '') + fld(c.duration) + '</p></div>' +
@@ -553,7 +553,7 @@ const PatientDetail: React.FC = () => {
           bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme ' + pName + ', agee de ' + pAge + '</p>' +
             '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p>' +
-            '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p></div>' +
+            '<p><strong>DPA (Date Prevue d\'Accouchement) :</strong> ' + fmt(c.dpa) + '</p></div>' +
             '<p>La patiente beneficie d\'un conge de maternite dans les conditions suivantes :</p>' +
             '<div class="cert-details">' +
             '<p><strong>Type :</strong> ' + fld(c.leaveType) + '</p>' +
