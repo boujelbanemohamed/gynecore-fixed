@@ -366,7 +366,8 @@ const PatientDetail: React.FC = () => {
       {key:'currentTerm',label:'Terme actuel (Semaines d\'Amenorrhee)',type:'text',placeholder:'ex: 28 SA'},
       {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
       {key:'measure',label:'Mesure demandee',type:'select',options:["Amenagement du poste de travail","Allegement des horaires","Arret de travail","Pas de port de charges > 5kg"]},
-      {key:'duration',label:'Duree',type:'date',placeholder:'Choisir une date de fin'},
+      {key:'duration',label:'Duree (texte libre)',type:'text',placeholder:"ex: jusqu'a l'accouchement"},
+      {key:'durationDate',label:'Ou choisir une date de fin',type:'date'},
       {key:'medicalContext',label:'Contexte medical',type:'textarea',placeholder:'Elements justifiant...'},
     ],
     MATERNITY_LEAVE: [
@@ -545,7 +546,7 @@ const PatientDetail: React.FC = () => {
             '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p></div>' +
             '<p>En consequence, je recommande la mesure suivante :</p>' +
             '<div class="cert-details"><p><strong>Mesure :</strong> ' + fld(c.measure) + '</p>' +
-            '<p><strong>Duree :</strong> jusqu\'au ' + fmt(c.duration) + '</p></div>' +
+            '<p><strong>Duree :</strong> ' + (c.durationDate ? 'jusqu\'au ' + fmt(c.durationDate) : fld(c.duration)) + '</p></div>' +
             (c.medicalContext ? '<div class="cert-observations"><strong>Contexte medical :</strong> ' + c.medicalContext + '</div>' : '');
           break;
         case 'MATERNITY_LEAVE':
