@@ -21,6 +21,15 @@ enum AppointmentStatus {
   NO_SHOW
 }
 
+enum CertificateType {
+  APTITUDE
+  MEDICAL_REST
+  PREGNANCY_WORK
+  MATERNITY_LEAVE
+  RETURN_TO_WORK
+  POST_OPERATIVE
+}
+
 enum ConsultationType {
   FIRST_VISIT
   FOLLOW_UP
@@ -87,6 +96,7 @@ model Patient {
   prescriptions       Prescription[]
   appointments        Appointment[]
   documents           Document[]
+  certificates         Certificate[]
 
   @@map("patients")
 }
@@ -163,3 +173,18 @@ model Document {
 
   @@map("documents")
 }
+
+model Certificate {
+  id             String           @id @default(cuid())
+  patientId      String
+  patient        Patient          @relation(fields: [patientId], references: [id])
+  type           CertificateType
+  date           DateTime         @default(now())
+  content        Json
+  isValid        Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@map("certificates")
+}
+

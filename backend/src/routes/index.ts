@@ -8,6 +8,7 @@ import * as profileController from '../controllers/profileController';
 import * as documentController from '../controllers/documentController';
 import * as patientPortalController from '../controllers/patientPortalController';
 import * as consultationController from '../controllers/consultationController';
+import * as certificateController from '../controllers/certificateController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
 
 const router = Router();
@@ -36,6 +37,12 @@ router.get('/doctor/prescriptions', authenticate, authorizeDoctor, prescriptionC
 router.get('/doctor/prescriptions/:id', authenticate, authorizeDoctor, prescriptionController.getPrescriptionById);
 router.post('/doctor/prescriptions', authenticate, authorizeDoctor, prescriptionController.createPrescription);
 router.put('/doctor/prescriptions/:id', authenticate, authorizeDoctor, prescriptionController.updatePrescription);
+router.delete('/doctor/prescriptions/:id', authenticate, authorizeDoctor, prescriptionController.deletePrescription);
+
+router.get('/doctor/certificates', authenticate, authorizeDoctor, certificateController.getCertificates);
+router.get('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.getCertificateById);
+router.post('/doctor/certificates', authenticate, authorizeDoctor, certificateController.createCertificate);
+router.delete('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.deleteCertificate);
 
 router.get('/doctor/profile', authenticate, authorizeDoctor, profileController.getProfile);
 router.put('/doctor/profile', authenticate, authorizeDoctor, profileController.updateProfile);

@@ -1,15 +1,12 @@
 node_modules/
-dist/
 .env
 .env.local
-.env.production
-*.log
-npm-debug.log*
+*.bak
+*.bak[0-9]*
 .DS_Store
-Thumbs.db
-
-# Fichiers uploadés (données médicales — ne jamais commiter)
-uploads/documents/*
-uploads/logos/*
-!uploads/documents/.gitkeep
-!uploads/logos/.gitkeep
+dist/
+build/
+coverage/
+*.log
+uploads/*
+!uploads/.gitkeep

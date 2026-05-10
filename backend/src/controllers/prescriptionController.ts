@@ -57,6 +57,17 @@ export const createPrescription = async (req: Request, res: Response) => {
   }
 };
 
+
+export const deletePrescription = async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    await prisma.prescription.delete({ where: { id } });
+    res.json({ message: 'Ordonnance supprimee' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const updatePrescription = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

@@ -5,5 +5,10 @@ node_modules/
 *.bak[0-9]*
 .DS_Store
 build/
+dist/
 coverage/
 *.log
+.idea/
+.vscode/
+backend/uploads/*
+!backend/uploads/.gitkeep
