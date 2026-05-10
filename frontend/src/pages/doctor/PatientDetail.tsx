@@ -739,7 +739,7 @@ const PatientDetail: React.FC = () => {
           ) : patient.consultations.map((c: any) => (
             <div className="card" key={c.id}>
               <div className="card-header">
-                <span style={{ fontWeight: 500 }}>{new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                <span style={{ fontWeight: 500 }}>{new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ' ' + new Date(c.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
                 <span className="badge badge-info">{typeLabels[c.type] || c.type}</span>
               </div>
               {c.chiefComplaint && <div className="detail-row"><span className="detail-label">Motif de consultation</span><span>{c.chiefComplaint}</span></div>}
@@ -763,7 +763,7 @@ const PatientDetail: React.FC = () => {
           ) : patient.prescriptions.map((p: any) => (
             <div className="card" key={p.id} style={{ borderLeft: `3px solid ${p.isValid ? 'var(--success)' : 'var(--border)'}` }}>
               <div className="card-header">
-                <span style={{ fontWeight: 500 }}>Ordonnance du {new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                <span style={{ fontWeight: 500 }}>Ordonnance du {new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ' ' + new Date(p.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <span className={`badge ${p.isValid ? 'badge-success' : 'badge-muted'}`}>{p.isValid ? 'Valide' : 'Expirée'}</span>
                   <button className="btn btn-outline btn-sm" onClick={() => handlePrintPresc(p.id)}>🖨 Imprimer</button>
@@ -811,7 +811,7 @@ const PatientDetail: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span>{certTypeIcons[cert.type] || '📄'}</span>
                       <span style={{ fontWeight: 500 }}>{certTypeLabels[cert.type] || cert.type}</span>
-                      <span className="badge badge-info">{new Date(cert.date).toLocaleDateString('fr-FR')}</span>
+                      <span className="badge badge-info">{new Date(cert.date).toLocaleDateString('fr-FR') + ' ' + new Date(cert.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' ' + new Date(cert.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-outline btn-sm" onClick={() => handlePrintCert(cert.id)}>🖨 Imprimer</button>
