@@ -222,43 +222,50 @@ const PatientDetail: React.FC = () => {
 
 
   const PRINT_CSS = `
-    @page { size: A4; margin: 0; }
+    @page { size: A4; margin: 12mm 15mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 210mm; }
+    html, body { width: 210mm; min-height: 297mm; }
     body {
       font-family: Arial, Helvetica, sans-serif; color: #1a1a2e;
-      padding: 10mm 12mm;
+      padding: 0;
       background: white;
     }
     @media print {
+      html, body { width: 100%; height: auto; }
       body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
-    .rx-header { display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px; border-bottom: 3px solid #1a5c4a; margin-bottom: 14px; }
-    .rx-doctor-logo { width: 70px; height: 70px; border-radius: 50%; object-fit: contain; border: 2px solid #1a5c4a; }
-    .rx-info h2 { font-size: 17px; font-weight: 700; color: #1a5c4a; margin: 0; }
-    .rx-clinic-name { font-size: 12px; color: #1a5c4a; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 2px; }
-    .rx-specialty { font-size: 13px; color: #333; margin: 1px 0; }
+    .rx-header { display: flex; align-items: flex-start; gap: 16px; padding-bottom: 12px; border-bottom: 3px solid #1a5c4a; margin-bottom: 12px; }
+    .rx-doctor-logo { width: 64px; height: 64px; border-radius: 50%; object-fit: contain; border: 2px solid #1a5c4a; flex-shrink: 0; }
+    .rx-info { flex: 1; }
+    .rx-info h2 { font-size: 16px; font-weight: 700; color: #1a5c4a; margin: 0; }
+    .rx-clinic-name { font-size: 11px; color: #1a5c4a; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 1px; }
+    .rx-specialty { font-size: 12px; color: #333; margin: 1px 0; }
     .rx-services { font-size: 11px; color: #888; font-style: italic; margin: 1px 0; }
-    .rx-address { font-size: 12px; color: #555; margin: 1px 0; }
-    .rx-contact { font-size: 12px; color: #777; margin-top: 2px; }
-    .rx-title { text-align: center; font-size: 20px; font-weight: 700; color: #1a5c4a; text-transform: uppercase; letter-spacing: 2px; margin: 18px 0 14px 0; padding: 10px 0; border: 2px solid #1a5c4a; border-radius: 6px; background: #f0faf6; }
-    .rx-patient { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8f9fa; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+    .rx-address { font-size: 11px; color: #555; margin: 1px 0; }
+    .rx-contact { font-size: 11px; color: #777; margin-top: 2px; }
+    .rx-title { text-align: center; font-size: 18px; font-weight: 700; color: #1a5c4a; text-transform: uppercase; letter-spacing: 2px; margin: 14px 0 12px 0; padding: 8px 0; border: 2px solid #1a5c4a; border-radius: 6px; background: #f0faf6; }
+    .rx-patient { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f8f9fa; border-radius: 6px; margin-bottom: 14px; font-size: 13px; }
     .rx-patient strong { color: #1a5c4a; }
-    .rx-date-place { margin-bottom: 14px; font-size: 13px; color: #555; }
-    .rx-meds-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    .rx-meds-table thead th { background: #1a5c4a; color: white; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+    .rx-date-place { margin-bottom: 12px; font-size: 12px; color: #555; }
+    .rx-meds-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    .rx-meds-table thead th { background: #1a5c4a; color: white; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
     .rx-meds-table thead th:first-child { border-radius: 6px 0 0 0; }
     .rx-meds-table thead th:last-child { border-radius: 0 6px 0 0; }
-    .rx-meds-table tbody td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #e8eaed; }
+    .rx-meds-table tbody td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid #e8eaed; }
     .rx-meds-table tbody tr:nth-child(even) { background: #f8faf9; }
-    .rx-notes { padding: 12px 16px; background: #fef9ef; border-left: 4px solid #e67e22; border-radius: 0 6px 6px 0; font-size: 13px; margin-bottom: 16px; color: #555; }
+    .rx-notes { padding: 10px 14px; background: #fef9ef; border-left: 4px solid #e67e22; border-radius: 0 6px 6px 0; font-size: 12px; margin-bottom: 14px; color: #555; }
     .rx-notes strong { color: #333; }
-    .rx-footer { margin-top: 30px; padding-top: 14px; border-top: 3px solid #1a5c4a; }
+    .rx-footer { margin-top: 24px; padding-top: 12px; border-top: 3px solid #1a5c4a; }
     .rx-signature { text-align: center; }
-    .rx-sig-line { width: 200px; border-top: 1px solid #999; margin-top: 60px; padding-top: 6px; font-size: 12px; color: #555; }
-    .cert-body { margin: 18px 0; line-height: 1.8; }
-    .cert-body p { margin: 6px 0; font-size: 13px; }
+    .rx-sig-line { width: 200px; border-top: 1px solid #999; margin-top: 50px; padding-top: 6px; font-size: 11px; color: #555; }
+    .cert-body { margin: 14px 0; line-height: 1.9; }
+    .cert-body p { margin: 8px 0; font-size: 13px; text-align: justify; }
+    .cert-details { margin: 10px 0; padding: 12px 16px; background: #f8f9fa; border-radius: 6px; }
+    .cert-details p { margin: 5px 0; font-size: 13px; }
+    .cert-details strong { color: #1a5c4a; }
+    .cert-observations { margin: 10px 0; padding: 10px 14px; background: #fef9ef; border-left: 4px solid #e67e22; border-radius: 0 6px 6px 0; font-size: 13px; }
     table { width: 100%; border-collapse: collapse; }
+    .page-break { page-break-after: always; }
   `;
 
     const printInIframe = (htmlContent: string) => {
@@ -493,22 +500,76 @@ const PatientDetail: React.FC = () => {
       let bodyHtml = '';
       switch (cert.type) {
         case 'APTITUDE':
-          bodyHtml = '<p>Je soussigne(e), Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + ', ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p><p>Mme/Mlle <strong>' + pName + '</strong>, agee de <strong>' + pAge + '</strong>, est apte a ' + fld(c.aptitudeFor||'') + '.</p><p>Date d\'examen : ' + fmt(c.examinationDate) + '</p>';
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
+            '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
+            '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p>' +
+            (c.cin ? '<p><strong>CIN :</strong> ' + c.cin + '</p>' : '') +
+            '<p><strong>Date du certificat :</strong> ' + fmt(c.certDate) + '</p></div>' +
+            '<p>Apres examen medical, je certifie que la patiente est :</p>' +
+            '<div class="cert-details"><p><strong>' + fld(c.aptitudeType) + '</strong></p></div>' +
+            (c.validityDuration ? '<p>Ce certificat est valable pour une duree de <strong>' + c.validityDuration + '</strong>.</p>' : '') +
+            (c.observations ? '<div class="cert-observations"><strong>Observations :</strong> ' + c.observations + '</div>' : '');
           break;
         case 'MEDICAL_REST':
-          bodyHtml = '<p>Je soussigne(e), Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + ', certifie que :</p><p>Mme/Mlle <strong>' + pName + '</strong>, agee de <strong>' + pAge + '</strong>, necessite un repos medical.</p><p>Duree du repos : du <strong>' + fmt(c.startDate) + '</strong> au <strong>' + fmt(c.endDate) + '</strong> (' + fld(c.duration) + ' jours).</p><p>Motif : ' + fld(c.reason) + '</p>';
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
+            '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
+            '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p></div>' +
+            '<p>La patiente necessite un repos medical pour la duree et les conditions suivantes :</p>' +
+            '<div class="cert-details">' +
+            '<p><strong>Du :</strong> ' + fmt(c.startDate) + ' <strong>Au :</strong> ' + fmt(c.endDate) + ' (' + fld(c.durationDays) + ' jours)</p>' +
+            '<p><strong>Motif medical :</strong> ' + fld(c.medicalReason) + '</p>' +
+            (c.sorties ? '<p><strong>Sorties :</strong> ' + c.sorties + '</p>' : '') +
+            '</div>' +
+            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + c.recommendations + '</div>' : '');
           break;
         case 'PREGNANCY_WORK':
-          bodyHtml = '<p>Je soussigne(e), Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + ', certifie la grossesse de :</p><p>Mme/Mlle <strong>' + pName + '</strong>, agee de <strong>' + pAge + '</strong>.</p><p>Date de debut de grossesse estimee : <strong>' + fmt(c.pregnancyStartDate) + '</strong></p><p>Date prevue d\'accouchement (DPA) : <strong>' + fmt(c.expectedDeliveryDate) + '</strong></p><p>Nombre de semaines d\'amenorrhee : ' + fld(c.weeksOfAmenorrhea) + ' SA</p><p>Recommandations : ' + fld(c.recommendations) + '</p>';
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie la grossesse de :</p>' +
+            '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
+            '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p>' +
+            '<p><strong>Terme actuel :</strong> ' + fld(c.currentTerm) + ' SA</p>' +
+            '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p></div>' +
+            '<p>En consequence, je recommande la mesure suivante :</p>' +
+            '<div class="cert-details"><p><strong>Mesure :</strong> ' + fld(c.measure) + '</p>' +
+            '<p><strong>Duree :</strong> ' + fld(c.duration) + '</p></div>' +
+            (c.medicalContext ? '<div class="cert-observations"><strong>Contexte medical :</strong> ' + c.medicalContext + '</div>' : '');
           break;
         case 'MATERNITY_LEAVE':
-          bodyHtml = '<p>Je soussigne(e), Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + ', certifie que :</p><p>Mme <strong>' + pName + '</strong>, agee de <strong>' + pAge + '</strong>, beneficie d\'un conge de maternite.</p><p>Date prevue d\'accouchement : <strong>' + fmt(c.expectedDeliveryDate) + '</strong></p><p>Debut du conge : <strong>' + fmt(c.startDate) + '</strong></p><p>Duree : ' + fld(c.duration) + ' semaines</p><p>Recommandations : ' + fld(c.recommendations) + '</p>';
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
+            '<div class="cert-details"><p><strong>Patiente :</strong> Mme ' + pName + ', agee de ' + pAge + '</p>' +
+            '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p>' +
+            '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p></div>' +
+            '<p>La patiente beneficie d\'un conge de maternite dans les conditions suivantes :</p>' +
+            '<div class="cert-details">' +
+            '<p><strong>Type :</strong> ' + fld(c.leaveType) + '</p>' +
+            '<p><strong>Debut :</strong> ' + fmt(c.startDate) + '</p>' +
+            '<p><strong>Duree totale :</strong> ' + fld(c.totalDuration) + '</p></div>' +
+            (c.observations ? '<div class="cert-observations"><strong>Observations :</strong> ' + c.observations + '</div>' : '');
           break;
         case 'RETURN_TO_WORK':
-          bodyHtml = '<p>Je soussigne(e), Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + ', autorise le retour au travail de :</p><p>Mme/Mlle <strong>' + pName + '</strong>, agee de <strong>' + pAge + '</strong>.</p><p>Date de reprise prevue : <strong>' + fmt(c.returnDate) + '</strong></p><p>Observations : ' + fld(c.observations) + '</p><p>Aucune contre-indication medicale a la reprise du travail.</p>';
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', autorise la reprise du travail de :</p>' +
+            '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
+            '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p></div>' +
+            '<p>Arret de travail pour le motif suivant :</p>' +
+            '<div class="cert-details">' +
+            '<p><strong>Motif de l\'arret :</strong> ' + fld(c.stopReason) + '</p>' +
+            '<p><strong>Date de reprise :</strong> ' + fmt(c.returnDate) + '</p>' +
+            '<p><strong>Type de reprise :</strong> ' + fld(c.returnType) + '</p></div>' +
+            '<p>Aucune contre-indication medicale a la reprise du travail.</p>' +
+            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + c.recommendations + '</div>' : '');
           break;
         case 'POST_OPERATIVE':
-          bodyHtml = '<p>Je soussigne(e), Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + ', certifie que :</p><p>Mme/Mlle <strong>' + pName + '</strong>, agee de <strong>' + pAge + '</strong>, a beneficie d\'une intervention chirurgicale.</p><p>Date de l\'intervention : <strong>' + fmt(c.surgeryDate) + '</strong></p><p>Nature de l\'intervention : ' + fld(c.surgeryType) + '</p><p>Observations post-operatoires : ' + fld(c.observations) + '</p><p>Recommandations : ' + fld(c.recommendations) + '</p>';
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
+            '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
+            '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p></div>' +
+            '<p>La patiente a beneficie d\'une intervention chirurgicale dans les conditions suivantes :</p>' +
+            '<div class="cert-details">' +
+            '<p><strong>Acte chirurgical :</strong> ' + fld(c.surgicalProcedure) + '</p>' +
+            '<p><strong>Date d\'intervention :</strong> ' + fmt(c.interventionDate) + '</p>' +
+            '<p><strong>Repos prescrit :</strong> ' + fld(c.restDuration) + '</p>' +
+            '<p><strong>Reprise d\'activite le :</strong> ' + fmt(c.resumptionDate) + '</p>' +
+            (c.restrictions ? '<p><strong>Restrictions :</strong> ' + c.restrictions + '</p>' : '') +
+            '</div>' +
+            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + c.recommendations + '</div>' : '');
           break;
         default:
           bodyHtml = '<p>Contenu du certificat</p>';
@@ -521,8 +582,8 @@ const PatientDetail: React.FC = () => {
       };
       const title = certTitles[cert.type] || 'CERTIFICAT MEDICAL';
       const html = '<div>' +
-        '<div class="rx-header"><div class="rx-doctor">' + logoHtml +
-        '<div class="rx-doctor-info">' +
+        '<div class="rx-header">' + logoHtml +
+        '<div class="rx-info">' +
         '<div class="rx-clinic-name">' + (doctorProfile?.clinicName||'') + '</div>' +
         '<h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
         '<div class="rx-specialty">' + (doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
