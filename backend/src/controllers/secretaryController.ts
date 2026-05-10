@@ -96,3 +96,28 @@ export const toggleSecretaryStatus = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+
+// Update secretary info
+export const updateSecretary = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, phone, cinNumber, address, city, postalCode, email } = req.body;
+    const secretary = await prisma.user.findFirst({ where: { id, role: 'SECRETARY', doctorId: req.user!.userId } });
+    if (!secretary) {
+      return res.status(404).json({ success: false, error: 'Secretaire non trouvee' });
+    }
+    if (email && email !== secretary.email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) return res.status(409).json({ success: false, error: 'Un compte avec cet email existe deja' });
+    }
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { firstName, lastName, phone, cinNumber, address, city, postalCode, email },
+      select: { id: true, email: true, firstName: true, lastName: true, phone: true, cinNumber: true, address: true, city: true, postalCode: true, isActive: true, createdAt: true },
+    });
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

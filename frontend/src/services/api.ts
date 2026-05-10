@@ -62,6 +62,7 @@ export const doctorAPI = {
   listSecretaries: () => api.get('/doctor/secretaries'),
   createSecretary: (data: Record<string, unknown>) => api.post('/doctor/secretaries', data),
   resetSecretaryPassword: (id: string, password: string) => api.post(`/doctor/secretaries/${id}/reset-password`, { password }),
+  updateSecretary: (id: string, data: Record<string, unknown>) => api.put(`/doctor/secretaries/${id}`, data),
   toggleSecretaryStatus: (id: string) => api.patch(`/doctor/secretaries/${id}/toggle-status`),
   uploadLogo: (file: File) => {
     const formData = new FormData();

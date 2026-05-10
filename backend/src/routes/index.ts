@@ -25,6 +25,14 @@ router.post('/auth/reset-password', passwordResetController.resetPassword);
 
 router.get('/doctor/audit-logs', authenticate, authorizeDoctor, auditController.getAuditLogs);
 
+// Secretary management
+router.get('/doctor/secretaries', authenticate, authorizeDoctor, secretaryController.listSecretaries);
+router.post('/doctor/secretaries', authenticate, authorizeDoctor, secretaryController.createSecretary);
+router.post('/doctor/secretaries/:id/reset-password', authenticate, authorizeDoctor, secretaryController.resetSecretaryPassword);
+router.post('/doctor/secretaries/:id/reset-password', authenticate, authorizeDoctor, secretaryController.resetSecretaryPassword);
+router.put('/doctor/secretaries/:id', authenticate, authorizeDoctor, secretaryController.updateSecretary);
+router.patch('/doctor/secretaries/:id/toggle-status', authenticate, authorizeDoctor, secretaryController.toggleSecretaryStatus);
+
 router.get('/doctor/dashboard', authenticate, authorizeDoctor, patientController.getDashboardStats);
 
 router.get('/doctor/patients', authenticate, authorizeDoctor, patientController.getPatients);

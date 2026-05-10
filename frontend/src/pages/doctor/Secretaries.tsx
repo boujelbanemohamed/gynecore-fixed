@@ -6,11 +6,13 @@ const Secretaries: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<any>(null);
   const [pwTarget, setPwTarget] = useState<any>(null);
   const [pw, setPw] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [form, setForm] = useState({ email: '', firstName: '', lastName: '', phone: '', cinNumber: '', address: '', city: '', postalCode: '', password: '' });
+  const [editForm, setEditForm] = useState({ email: '', firstName: '', lastName: '', phone: '', cinNumber: '', address: '', city: '', postalCode: '' });
 
   const load = () => {
     setLoading(true);
@@ -35,6 +37,19 @@ const Secretaries: React.FC = () => {
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors de la creation');
     }
+  };
+
+    const handleUpdate = async () => {
+    setError('');
+    if (!editForm.firstName || !editForm.lastName) { setError('Nom et prenom sont requis'); return; }
+    try {
+      await doctorAPI.updateSecretary(editTarget.id, editForm);
+      setShowModal(false);
+      setEditTarget(null);
+      setSuccess('Secretaire modifiee avec succes');
+      setTimeout(() => setSuccess(''), 3000);
+      load();
+    } catch (e: any) { setError(e.response?.data?.error || 'Erreur lors de la modification'); }
   };
 
   const handleResetPw = async () => {
@@ -80,6 +95,7 @@ const Secretaries: React.FC = () => {
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span className={'badge ' + (s.isActive ? 'badge-success' : 'badge-muted')}>{s.isActive ? 'Active' : 'Inactive'}</span>
+                <button className="btn btn-outline btn-sm" onClick={() => { setEditForm({ email: s.email, firstName: s.firstName, lastName: s.lastName, phone: s.phone || '', cinNumber: s.cinNumber || '', address: s.address || '', city: s.city || '', postalCode: s.postalCode || '' }); setEditTarget(s); setError(''); setShowModal(true); }}>Modifier</button>
                 <button className="btn btn-outline btn-sm" onClick={() => { setPwTarget(s); setPw(''); setError(''); setShowPwModal(true); }}>Mot de passe</button>
                 <button className={'btn btn-outline btn-sm'} style={{ color: s.isActive ? 'var(--danger)' : 'var(--success)' }} onClick={() => handleToggle(s)}>{s.isActive ? 'Desactiver' : 'Activer'}</button>
               </div>
@@ -89,19 +105,22 @@ const Secretaries: React.FC = () => {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay" onClick={() => { setShowModal(false); setEditTarget(null); }}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
-            <div className="modal-header"><h3>Nouvelle secretaire</h3><button className="btn-close" onClick={() => setShowModal(false)}>x</button></div>
+            <div className="modal-header"><h3>{editTarget ? 'Modifier secretaire' : 'Nouvelle secretaire'}</h3><button className="btn-close" onClick={() => { setShowModal(false); setEditTarget(null); }}>x</button></div>
             <div className="modal-body">
               {error && <div style={{ background: '#f8d7da', color: '#721c24', padding: 8, borderRadius: 4, marginBottom: 12, fontSize: 13 }}>{error}</div>}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {[['firstName', 'Prenom'], ['lastName', 'Nom'], ['email', 'Email'], ['cinNumber', 'Numero CIN'], ['phone', 'Telephone'], ['address', 'Adresse'], ['city', 'Ville'], ['postalCode', 'Code postal']].map(([k, l]) => (
-                  <div key={k}><label className="form-label" style={{ fontSize: 12 }}>{l}</label><input className="form-control" value={(form as any)[k]} onChange={e => upd(k, e.target.value)} /></div>
+                {(editTarget
+                  ? [['firstName', 'Prenom'], ['lastName', 'Nom'], ['email', 'Email'], ['cinNumber', 'Numero CIN'], ['phone', 'Telephone'], ['address', 'Adresse'], ['city', 'Ville'], ['postalCode', 'Code postal']]
+                  : [['firstName', 'Prenom'], ['lastName', 'Nom'], ['email', 'Email'], ['cinNumber', 'Numero CIN'], ['phone', 'Telephone'], ['address', 'Adresse'], ['city', 'Ville'], ['postalCode', 'Code postal']]
+                ).map(([k, l]) => (
+                  <div key={k}><label className="form-label" style={{ fontSize: 12 }}>{l}</label><input className="form-control" value={editTarget ? (editForm as any)[k] : (form as any)[k]} onChange={e => editTarget ? setEditForm(p => ({ ...p, [k]: e.target.value })) : upd(k, e.target.value)} /></div>
                 ))}
-                <div style={{ gridColumn: '1/-1' }}><label className="form-label" style={{ fontSize: 12 }}>Mot de passe</label><input className="form-control" type="password" value={form.password} onChange={e => upd('password', e.target.value)} /></div>
+                {!editTarget && <div style={{ gridColumn: '1/-1' }}><label className="form-label" style={{ fontSize: 12 }}>Mot de passe</label><input className="form-control" type="password" value={form.password} onChange={e => upd('password', e.target.value)} /></div>}
               </div>
             </div>
-            <div className="modal-footer"><button className="btn btn-outline" onClick={() => setShowModal(false)}>Annuler</button><button className="btn btn-primary" onClick={handleCreate}>Creer</button></div>
+            <div className="modal-footer"><button className="btn btn-outline" onClick={() => { setShowModal(false); setEditTarget(null); }}>Annuler</button><button className="btn btn-primary" onClick={editTarget ? handleUpdate : handleCreate}>{editTarget ? 'Enregistrer' : 'Creer'}</button></div>
           </div>
         </div>
       )}
