@@ -8,6 +8,7 @@ import * as profileController from '../controllers/profileController';
 import * as documentController from '../controllers/documentController';
 import * as patientPortalController from '../controllers/patientPortalController';
 import * as consultationController from '../controllers/consultationController';
+import * as passwordResetController from '../controllers/passwordResetController';
 import * as certificateController from '../controllers/certificateController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
 
@@ -16,6 +17,9 @@ const router = Router();
 router.post('/auth/login', authController.loginDoctor);
 router.post('/auth/patient/login', authController.loginPatient);
 router.get('/auth/me', authenticate, authController.getMe);
+router.post('/auth/forgot-password', passwordResetController.forgotPassword);
+router.post('/auth/verify-reset-token', passwordResetController.verifyResetToken);
+router.post('/auth/reset-password', passwordResetController.resetPassword);
 
 router.get('/doctor/dashboard', authenticate, authorizeDoctor, patientController.getDashboardStats);
 

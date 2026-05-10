@@ -43,7 +43,7 @@ export const createCertificate = async (req: Request, res: Response) => {
   try {
     const data = createCertificateSchema.parse(req.body);
     const certificate = await prisma.certificate.create({
-      data: { patientId: data.patientId, type: data.type, content: data.content || {} },
+      data: { patientId: data.patientId, type: data.type, content: (data.content || {}) as any },
       include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
     });
     return res.status(201).json({ success: true, data: certificate });
