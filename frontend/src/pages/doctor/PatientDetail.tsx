@@ -222,16 +222,16 @@ const PatientDetail: React.FC = () => {
 
 
   const PRINT_CSS = `
-    @page { size: A4; margin: 12mm 15mm; }
+    @page { size: A4; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 210mm; min-height: 297mm; }
+    html, body { width: 210mm; height: auto; overflow: hidden; }
     body {
       font-family: Arial, Helvetica, sans-serif; color: #1a1a2e;
-      padding: 0;
+      padding: 12mm 15mm;
       background: white;
     }
     @media print {
-      html, body { width: 100%; height: auto; }
+      html, body { width: 100%; height: auto; overflow: hidden; }
       body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
     .rx-header { display: flex; align-items: flex-start; gap: 16px; padding-bottom: 12px; border-bottom: 3px solid #1a5c4a; margin-bottom: 12px; }
