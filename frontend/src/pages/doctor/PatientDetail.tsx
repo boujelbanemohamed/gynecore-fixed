@@ -502,6 +502,11 @@ const getCertFields = (t: string) => {
         if (diff >= 0) updated.totalDuration = String(diff) + ' jours';
       }
     }
+    // Auto-calculate restDuration for POST_OPERATIVE
+    if (certType === 'POST_OPERATIVE' && (updated.interventionDate && updated.resumptionDate) && ('interventionDate' in patch || 'resumptionDate' in patch)) {
+      const diff = Math.ceil(Math.abs(new Date(updated.resumptionDate).getTime() - new Date(updated.interventionDate).getTime()) / (1000*60*60*24));
+      if (diff >= 0) updated.restDuration = String(diff) + ' jours';
+    }
     return updated;
   });
 
