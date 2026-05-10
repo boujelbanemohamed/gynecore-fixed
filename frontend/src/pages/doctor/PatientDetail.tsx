@@ -412,7 +412,22 @@ const PatientDetail: React.FC = () => {
     setShowCertModal(true);
   };
 
-  const updCert = (patch: Record<string,string>) => setCertForm(prev => ({ ...prev, ...patch }));
+  const updCert = (patch: Record<string,string>) => setCertForm(prev => {
+    const updated = { ...prev, ...patch };
+    // Auto-calculate durationDays for MEDICAL_REST when dates change
+    if (certType === 'MEDICAL_REST' && ('startDate' in patch || 'endDate' in patch)) {
+      if (updated.startDate && updated.endDate) {
+        const start = new Date(updated.startDate);
+        const end = new Date(updated.endDate);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0) {
+          updated.durationDays = String(diffDays);
+        }
+      }
+    }
+    return updated;
+  });
 
   const handleSaveCert = async () => {
     setCertSaving(true);
