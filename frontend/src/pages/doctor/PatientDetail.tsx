@@ -363,16 +363,16 @@ const PatientDetail: React.FC = () => {
     PREGNANCY_WORK: [
       {key:'fullName',label:'Nom complet',type:'text',placeholder:'Nom Prenom'},
       {key:'dateOfBirth',label:'Date de naissance',type:'date'},
-      {key:'currentTerm',label:'Terme actuel (SA)',type:'text',placeholder:'ex: 28'},
-      {key:'dpa',label:'DPA',type:'date'},
+      {key:'currentTerm',label:'Terme actuel (Semaines d\'Amenorrhee)',type:'text',placeholder:'ex: 28 SA'},
+      {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
       {key:'measure',label:'Mesure demandee',type:'select',options:["Amenagement du poste de travail","Allegement des horaires","Arret de travail","Pas de port de charges > 5kg"]},
-      {key:'duration',label:'Duree',type:'text',placeholder:"ex: jusqu'a l'accouchement"},
+      {key:'duration',label:'Duree',type:'date',placeholder:'Choisir une date de fin'},
       {key:'medicalContext',label:'Contexte medical',type:'textarea',placeholder:'Elements justifiant...'},
     ],
     MATERNITY_LEAVE: [
       {key:'fullName',label:'Nom complet',type:'text',placeholder:'Nom Prenom'},
       {key:'dateOfBirth',label:'Date de naissance',type:'date'},
-      {key:'dpa',label:'DPA',type:'date'},
+      {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
       {key:'startDate',label:'Debut conge prenatal',type:'date'},
       {key:'leaveType',label:'Type de conge',type:'select',options:['Conge prenatal','Conge postnatal','Conge de maternite complet']},
       {key:'totalDuration',label:'Duree totale',type:'text',placeholder:'ex: 14 semaines'},
@@ -545,7 +545,7 @@ const PatientDetail: React.FC = () => {
             '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p></div>' +
             '<p>En consequence, je recommande la mesure suivante :</p>' +
             '<div class="cert-details"><p><strong>Mesure :</strong> ' + fld(c.measure) + '</p>' +
-            '<p><strong>Duree :</strong> ' + fld(c.duration) + '</p></div>' +
+            '<p><strong>Duree :</strong> jusqu\'au ' + fmt(c.duration) + '</p></div>' +
             (c.medicalContext ? '<div class="cert-observations"><strong>Contexte medical :</strong> ' + c.medicalContext + '</div>' : '');
           break;
         case 'MATERNITY_LEAVE':
