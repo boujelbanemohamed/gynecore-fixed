@@ -398,11 +398,70 @@ const PatientDetail: React.FC = () => {
       {key:'recommendations',label:'Recommandations',type:'textarea',placeholder:'Soins, surveillance, alarmes...'},
     ],
   };
+const getCertFields = (t: string) => {
+    if (t === 'MATERNITY_LEAVE') {
+      const base = [
+        {key:'fullName',label:'Nom complet',type:'text',placeholder:'Nom Prenom'},
+        {key:'dateOfBirth',label:'Date de naissance',type:'date'},
+        {key:'leaveType',label:'Type de conge',type:'select',options:['Conge prenatal','Conge postnatal','Conge de maternite complet']},
+      ];
+      const obs = {key:'observations',label:'Observations',type:'textarea',placeholder:'Complications eventuelles...'};
+      const dur = {key:'totalDuration',label:'Duree totale (jours)',type:'text',placeholder:'auto-calcule'};
+      const lt = certForm.leaveType;
+      if (lt === 'Conge postnatal') {
+        return [...base,
+          {key:'dpa',label:"DPA ou Date d\'accouchement",type:'date'},
+          {key:'endDate',label:'Fin du conge postnatal',type:'date'},
+          dur, obs];
+      }
+      if (lt === 'Conge de maternite complet') {
+        return [...base,
+          {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
+          {key:'endDate',label:'Fin du conge de maternite',type:'date'},
+          dur, obs];
+      }
+      return [...base,
+        {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
+        {key:'startDate',label:'Debut conge prenatal',type:'date'},
+        dur, obs];
+    }
+    return certFields[t];
+  };
+
 
   const openCertModal = (type?: string) => {
     setCertType(type || 'APTITUDE');
     const fields = certFields[type || 'APTITUDE'] || [];
     const defaults: Record<string,string> = { certDate: new Date().toISOString().slice(0,10) };
+  const getCertFields = (t: string) => {
+    if (t === 'MATERNITY_LEAVE') {
+      const base = [
+        {key:'fullName',label:'Nom complet',type:'text',placeholder:'Nom Prenom'},
+        {key:'dateOfBirth',label:'Date de naissance',type:'date'},
+        {key:'leaveType',label:'Type de conge',type:'select',options:['Conge prenatal','Conge postnatal','Conge de maternite complet']},
+      ];
+      const obs = {key:'observations',label:'Observations',type:'textarea',placeholder:'Complications eventuelles...'};
+      const dur = {key:'totalDuration',label:'Duree totale (jours)',type:'text',placeholder:'auto-calcule'};
+      const lt = certForm.leaveType;
+      if (lt === 'Conge postnatal') {
+        return [...base,
+          {key:'dpa',label:"DPA ou Date d\'accouchement",type:'date'},
+          {key:'endDate',label:'Fin du conge postnatal',type:'date'},
+          dur, obs];
+      }
+      if (lt === 'Conge de maternite complet') {
+        return [...base,
+          {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
+          {key:'endDate',label:'Fin du conge de maternite',type:'date'},
+          dur, obs];
+      }
+      return [...base,
+        {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
+        {key:'startDate',label:'Debut conge prenatal',type:'date'},
+        dur, obs];
+    }
+    return certFields[t];
+  };
     fields.forEach(f => { if (f.type === 'date' && f.key === 'certDate') return; defaults[f.key] = ''; });
     if (patient) {
       const p = patient;
@@ -425,6 +484,22 @@ const PatientDetail: React.FC = () => {
         if (diffDays >= 0) {
           updated.durationDays = String(diffDays);
         }
+      }
+    }
+    // Auto-calculate totalDuration for MATERNITY_LEAVE
+    if (certType === 'MATERNITY_LEAVE') {
+      if ('leaveType' in patch) {
+        if (patch.leaveType !== 'Conge prenatal') updated.startDate = '';
+        if (patch.leaveType !== 'Conge postnatal' && patch.leaveType !== 'Conge de maternite complet') updated.endDate = '';
+        updated.totalDuration = '';
+      }
+      const lt = updated.leaveType;
+      if (lt === 'Conge prenatal' && updated.startDate && updated.dpa) {
+        const diff = Math.ceil(Math.abs(new Date(updated.dpa).getTime() - new Date(updated.startDate).getTime()) / (1000*60*60*24));
+        if (diff >= 0) updated.totalDuration = String(diff) + ' jours';
+      } else if ((lt === 'Conge postnatal' || lt === 'Conge de maternite complet') && updated.endDate && updated.dpa) {
+        const diff = Math.ceil(Math.abs(new Date(updated.endDate).getTime() - new Date(updated.dpa).getTime()) / (1000*60*60*24));
+        if (diff >= 0) updated.totalDuration = String(diff) + ' jours';
       }
     }
     return updated;
@@ -550,14 +625,17 @@ const PatientDetail: React.FC = () => {
             (c.medicalContext ? '<div class="cert-observations"><strong>Contexte medical :</strong> ' + c.medicalContext + '</div>' : '');
           break;
         case 'MATERNITY_LEAVE':
+          const matDates = (c.leaveType === 'Conge postnatal')
+            ? '<p><strong>DPA ou Date d\'accouchement :</strong> ' + fmt(c.dpa) + '</p><p><strong>Fin du conge :</strong> ' + fmt(c.endDate) + '</p>'
+            : (c.leaveType === 'Conge de maternite complet')
+            ? '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p><p><strong>Fin du conge :</strong> ' + fmt(c.endDate) + '</p>'
+            : '<p><strong>DPA (Date Prevue d\'Accouchement) :</strong> ' + fmt(c.dpa) + '</p><p><strong>Debut :</strong> ' + fmt(c.startDate) + '</p>';
           bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme ' + pName + ', agee de ' + pAge + '</p>' +
-            '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p>' +
-            '<p><strong>DPA (Date Prevue d\'Accouchement) :</strong> ' + fmt(c.dpa) + '</p></div>' +
+            '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p></div>' +
             '<p>La patiente beneficie d\'un conge de maternite dans les conditions suivantes :</p>' +
-            '<div class="cert-details">' +
-            '<p><strong>Type :</strong> ' + fld(c.leaveType) + '</p>' +
-            '<p><strong>Debut :</strong> ' + fmt(c.startDate) + '</p>' +
+            '<div class="cert-details"><p><strong>Type :</strong> ' + fld(c.leaveType) + '</p>' +
+            matDates +
             '<p><strong>Duree totale :</strong> ' + fld(c.totalDuration) + '</p></div>' +
             (c.observations ? '<div class="cert-observations"><strong>Observations :</strong> ' + c.observations + '</div>' : '');
           break;
@@ -1060,7 +1138,7 @@ const PatientDetail: React.FC = () => {
             </div>
             <div className="modal-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {(certFields[certType] || []).map((field: any) => (
+                {(getCertFields(certType) || []).map((field: any) => (
                   <div key={field.key} style={field.type === 'textarea' ? { gridColumn: '1/-1' } : {}}>
                     <label className="form-label" style={{ fontSize: 12 }}>{field.label}</label>
                     {field.type === 'select' ? (
