@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   DOCTOR
   ASSISTANT
+  SECRETARY
   PATIENT
 }
 
@@ -48,6 +49,8 @@ model User {
   lastName       String
   phone          String?
   isActive       Boolean  @default(true)
+  cinNumber      String?
+  doctorId       String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   licenseNumber  String?
@@ -64,6 +67,8 @@ model User {
   appointments    Appointment[] @relation("DoctorAppointments")
   managedPatients Patient[]     @relation("DoctorPatients")
   resetTokens      PasswordResetToken[]
+  secretary       User?    @relation("DoctorSecretary", fields: [doctorId], references: [id])
+  secretaries    User[]   @relation("DoctorSecretary")
 
   @@map("users")
 }

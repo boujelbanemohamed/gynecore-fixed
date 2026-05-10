@@ -59,6 +59,10 @@ export const doctorAPI = {
   deleteDocument: (documentId: string) => api.delete(`/doctor/documents/${documentId}`),
   getProfile: () => api.get('/doctor/profile'),
   updateProfile: (data: Record<string, unknown>) => api.put('/doctor/profile', data),
+  listSecretaries: () => api.get('/doctor/secretaries'),
+  createSecretary: (data: Record<string, unknown>) => api.post('/doctor/secretaries', data),
+  resetSecretaryPassword: (id: string, password: string) => api.post(`/doctor/secretaries/${id}/reset-password`, { password }),
+  toggleSecretaryStatus: (id: string) => api.patch(`/doctor/secretaries/${id}/toggle-status`),
   uploadLogo: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);

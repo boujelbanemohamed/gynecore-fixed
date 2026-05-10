@@ -9,6 +9,7 @@ import * as documentController from '../controllers/documentController';
 import * as patientPortalController from '../controllers/patientPortalController';
 import * as consultationController from '../controllers/consultationController';
 import * as auditController from '../controllers/auditController';
+import * as secretaryController from '../controllers/secretaryController';
 import * as passwordResetController from '../controllers/passwordResetController';
 import * as certificateController from '../controllers/certificateController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';

@@ -11,6 +11,7 @@ import PatientDetail from './pages/doctor/PatientDetail';
 import Consultations from './pages/doctor/Consultations';
 import Calendar from './pages/doctor/Calendar';
 import Settings from './pages/doctor/Settings';
+import Secretaries from './pages/doctor/Secretaries';
 import PatientLogin from './pages/patient/Login';
 import PatientDashboard from './pages/patient/Dashboard';
 import PatientDossier from './pages/patient/Dossier';
@@ -33,6 +34,7 @@ const App: React.FC = () => (
             <Route path="/patients/:id" element={<PatientDetail />} />
             <Route path="/consultations" element={<Consultations />} />
             <Route path="/calendar" element={<Calendar />} />
+            <Route path="/secretaries" element={<Secretaries />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>
