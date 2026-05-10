@@ -546,7 +546,7 @@ const PatientDetail: React.FC = () => {
             '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p></div>' +
             '<p>En consequence, je recommande la mesure suivante :</p>' +
             '<div class="cert-details"><p><strong>Mesure :</strong> ' + fld(c.measure) + '</p>' +
-            '<p><strong>Duree :</strong> ' + (c.durationDate ? 'jusqu\'au ' + fmt(c.durationDate) : fld(c.duration)) + '</p></div>' +
+            '<p><strong>Duree :</strong> ' + (c.durationDate ? 'jusqu\'au ' + fmt(c.durationDate) : '') + (c.durationDate && c.duration ? ' - ' : '') + fld(c.duration) + '</p></div>' +
             (c.medicalContext ? '<div class="cert-observations"><strong>Contexte medical :</strong> ' + c.medicalContext + '</div>' : '');
           break;
         case 'MATERNITY_LEAVE':
