@@ -7,6 +7,7 @@ const navItems = [
   { to: '/patients', icon: '♀', label: 'Patientes' },
   { to: '/consultations', icon: '📋', label: 'Consultations' },
   { to: '/calendar', icon: '📅', label: 'Planning' },
+  { to: '/secretaries', icon: '👤', label: 'Secrétaires' },
   { to: '/settings', icon: '⚙', label: 'Paramètres' },
 ];
 
