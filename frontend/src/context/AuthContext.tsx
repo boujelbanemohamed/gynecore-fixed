@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { authAPI } from '../services/api';
 
 export type UserRole = 'DOCTOR' | 'ASSISTANT' | 'SECRETARY' | 'PATIENT';
-export interface AuthUser { id: string; email: string; firstName: string; lastName: string; role: UserRole; patientId?: string; }
+export interface AuthUser { id: string; email: string; firstName: string; lastName: string; role: UserRole; patientId?: string; doctorId?: string; }
 interface AuthContextType { user: AuthUser | null; token: string | null; loading: boolean; loginDoctor: (email: string, password: string) => Promise<void>; loginPatient: (email: string, password: string) => Promise<void>; loginSecretary: (email: string, password: string) => Promise<void>; logout: () => void; isDoctor: boolean; isPatient: boolean; isSecretary: boolean; }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -44,14 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(t); setUser(u);
   };
 
-    const loginSecretary = async (email: string, password: string) => {
-    const res = await authAPI.loginSecretary(email, password);
-    const { token: t, user: u } = res.data.data;
-    localStorage.setItem('token', t);
-    setToken(t); setUser(u);
-  };
-
-    const loginSecretary = async (email: string, password: string) => {
+  const loginSecretary = async (email: string, password: string) => {
     const res = await authAPI.loginSecretary(email, password);
     const { token: t, user: u } = res.data.data;
     localStorage.setItem('token', t);
@@ -60,15 +53,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     const isPatient = user?.role === 'PATIENT';
+    const isSec = user?.role === 'SECRETARY';
     localStorage.removeItem('token');
     setToken(null); setUser(null);
-    // Rediriger vers la bonne page de login selon le rôle
-    const isSec = user?.role === 'SECRETARY';
     window.location.href = isPatient ? '/patient/login' : isSec ? '/secretary/login' : '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, loginDoctor, loginPatient, logout, isDoctor: user?.role === 'DOCTOR' || user?.role === 'ASSISTANT', isPatient: user?.role === 'PATIENT', isSecretary: user?.role === 'SECRETARY', isSecretary: user?.role === 'SECRETARY' }}>
+    <AuthContext.Provider value={{ user, token, loading, loginDoctor, loginPatient, loginSecretary, logout, isDoctor: user?.role === 'DOCTOR' || user?.role === 'ASSISTANT', isPatient: user?.role === 'PATIENT', isSecretary: user?.role === 'SECRETARY' }}>
       {children}
     </AuthContext.Provider>
   );
