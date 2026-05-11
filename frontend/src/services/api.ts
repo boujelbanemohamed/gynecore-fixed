@@ -81,3 +81,19 @@ export const patientAPI = {
 };
 
 export default api;
+
+export const secretaryAPI = {
+  getDashboard: () => api.get('/secretary/dashboard'),
+  getDoctorInfo: () => api.get('/secretary/doctor-info'),
+  changePassword: (data: any) => api.put('/auth/secretary/password', data),
+  getPatients: (params?: any) => api.get('/secretary/patients', { params }),
+  getPatient: (id: string) => api.get('/secretary/patients/' + id),
+  createPatient: (data: any) => api.post('/secretary/patients', data),
+  updatePatient: (id: string, data: any) => api.put('/secretary/patients/' + id, data),
+  getConsultations: () => api.get('/secretary/consultations'),
+  getAppointments: (params?: any) => api.get('/secretary/appointments', { params }),
+  createAppointment: (data: any) => api.post('/secretary/appointments', data),
+  updateAppointment: (id: string, data: any) => api.put('/secretary/appointments/' + id, data),
+  updateAppointmentStatus: (id: string, status: string) => api.patch('/secretary/appointments/' + id + '/status', { status }),
+  deleteAppointment: (id: string) => api.delete('/secretary/appointments/' + id),
+};

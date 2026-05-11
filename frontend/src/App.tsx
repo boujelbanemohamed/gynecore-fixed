@@ -22,6 +22,9 @@ import PatientRendezVous from './pages/patient/RendezVous';
 import PatientProfile from './pages/patient/Profile';
 import SecretaryLogin from './pages/secretary/Login';
 import SecretaryDashboard from './pages/secretary/Dashboard';
+import SecretaryPatients from './pages/secretary/Patients';
+import SecretaryConsultations from './pages/secretary/Consultations';
+import SecretaryCalendar from './pages/secretary/Calendar';
 import SecretaryProfile from './pages/secretary/Profile';
 
 const App: React.FC = () => (
@@ -57,6 +60,9 @@ const App: React.FC = () => (
         </Route>
         <Route element={<SecretaryRoute />}>
           <Route element={<SecretaryLayout />}>
+            <Route path="/secretary/patients" element={<SecretaryPatients />} />
+            <Route path="/secretary/consultations" element={<SecretaryConsultations />} />
+            <Route path="/secretary/calendar" element={<SecretaryCalendar />} />
             <Route path="/secretary/dashboard" element={<SecretaryDashboard />} />
             <Route path="/secretary/profile" element={<SecretaryProfile />} />
           </Route>

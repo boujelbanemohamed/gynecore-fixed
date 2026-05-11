@@ -41,3 +41,4 @@ export const authorize = (...roles: Role[]) => {
 
 export const authorizeDoctor = authorize(Role.DOCTOR, Role.ASSISTANT);
 export const authorizePatient = authorize(Role.PATIENT);
+export const authorizeSecretary = authorize(Role.SECRETARY);
