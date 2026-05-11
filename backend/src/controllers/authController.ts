@@ -91,3 +91,38 @@ export const getMe = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 };
+
+
+export const loginSecretary = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = loginSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.isActive || user.role !== Role.SECRETARY) {
+      return res.status(401).json({ success: false, error: 'Identifiants invalides' });
+    }
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ success: false, error: 'Identifiants invalides' });
+    const token = jwt.sign(
+      { userId: user.id, role: user.role, email: user.email },
+      process.env.JWT_SECRET!,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' } as SignOptions,
+    );
+    return res.json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id, email: user.email,
+          firstName: user.firstName, lastName: user.lastName, role: user.role,
+          doctorId: user.doctorId,
+        },
+      },
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: err.errors[0].message });
+    }
+    console.error('[loginSecretary] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};

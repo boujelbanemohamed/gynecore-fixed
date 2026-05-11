@@ -24,6 +24,7 @@ api.interceptors.response.use(
 export const authAPI = {
   loginDoctor: (email: string, password: string) => api.post('/auth/login', { email, password }),
   loginPatient: (email: string, password: string) => api.post('/auth/patient/login', { email, password }),
+  loginSecretary: (email: string, password: string) => api.post('/auth/secretary/login', { email, password }),
   getMe: () => api.get('/auth/me'),
 };
 
