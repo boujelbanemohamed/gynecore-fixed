@@ -17,19 +17,25 @@ const SecretaryLayout: React.FC = () => {
             display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px', color: '#fff', textDecoration: 'none',
             backgroundColor: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
             borderLeft: isActive ? '3px solid #fff' : '3px solid transparent',
-          })}>Dashboard</NavLink>
+          })}>
+            <span>Dashboard</span>
+          </NavLink>
           <NavLink to="/secretary/profile" style={({ isActive }) => ({
             display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px', color: '#fff', textDecoration: 'none',
             backgroundColor: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
             borderLeft: isActive ? '3px solid #fff' : '3px solid transparent',
-          })}>Mon Profil</NavLink>
+          })}>
+            <span>Mon Profil</span>
+          </NavLink>
         </nav>
         <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <div style={{ fontSize: 13, marginBottom: 8, opacity: 0.8 }}>{user?.firstName} {user?.lastName}</div>
           <button onClick={logout} style={{
             width: '100%', padding: '8px', backgroundColor: 'rgba(255,255,255,0.15)',
             border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 13,
-          }}>Deconnexion</button>
+          }}>
+            Deconnexion
+          </button>
         </div>
       </aside>
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -39,9 +45,12 @@ const SecretaryLayout: React.FC = () => {
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
         </header>
-        <div style={{ flex: 1, padding: 24 }}><Outlet /></div>
+        <div style={{ flex: 1, padding: 24 }}>
+          <Outlet />
+        </div>
       </main>
     </div>
   );
 };
+
 export default SecretaryLayout;

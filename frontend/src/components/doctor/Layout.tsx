@@ -9,6 +9,7 @@ const navItems = [
   { to: '/calendar', icon: '📅', label: 'Planning' },
   { to: '/secretaries', icon: '👤', label: 'Secrétaires' },
   { to: '/settings', icon: '⚙', label: 'Paramètres' },
+    { to: '/profile', icon: '\u{1F464}', label: 'Mon Profil' },
 ];
 
 const pageTitles: Record<string, string> = {

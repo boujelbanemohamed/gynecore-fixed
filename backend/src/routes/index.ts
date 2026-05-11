@@ -18,7 +18,7 @@ import { uploadLogo, uploadDocument } from '../middleware/upload';
 const router = Router();
 
 router.post('/auth/login', authController.loginDoctor);
-router.put('/auth/secretary/profile', authenticate, updateSecretaryProfile);
+router.put('/auth/secretary/profile', authenticate, authController.updateSecretaryProfile);
 router.post('/auth/secretary/login', authController.loginSecretary);
 router.post('/auth/patient/login', authController.loginPatient);
 router.get('/auth/me', authenticate, authController.getMe);

@@ -7,6 +7,7 @@ const navItems = [
   { to: '/patient/dossier', icon: '📁', label: 'Mon dossier' },
   { to: '/patient/prescriptions', icon: '💊', label: 'Mes ordonnances' },
   { to: '/patient/rendez-vous', icon: '📅', label: 'Mes rendez-vous' },
+    { to: '/patient/profile', icon: '\u{1F464}', label: 'Mon Profil' },
 ];
 
 const PatientLayout: React.FC = () => {
