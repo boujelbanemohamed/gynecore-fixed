@@ -46,7 +46,7 @@ const DoctorLogin: React.FC = () => {
             </button>
           </form>
           <div className="login-divider">ou</div>
-          <div className="login-switch">Vous êtes patient ? <Link to="/patient/login">Portail patient →</Link></div>
+          <div className="login-switch">Vous êtes patient ? <Link to="/patient/login">Portail patient →</Link> | Vous êtes secrétaire ? <Link to="/secretary/login">Portail secrétaire →</Link></div>
         </div>
       </div>
     </div>
