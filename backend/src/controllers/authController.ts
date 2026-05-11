@@ -126,3 +126,22 @@ export const loginSecretary = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 };
+
+
+export const updateSecretaryProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Non authentifie' });
+    const { firstName, lastName, email, phone } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.role !== 'SECRETARY') return res.status(403).json({ success: false, message: 'Acces refuse' });
+    if (email && email !== user.email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) return res.status(400).json({ success: false, message: 'Email deja utilise' });
+    }
+    const updated = await prisma.user.update({ where: { id: userId }, data: { firstName, lastName, email, phone } });
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

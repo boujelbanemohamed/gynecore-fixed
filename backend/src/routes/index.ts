@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, authorizeDoctor, authorizePatient } from '../middleware/auth';
-import * as authController from '../controllers/authController';
+import * as authController from '../controllers/authController'
+import { authMiddleware } from '../middleware/authMiddleware';;
 import * as patientController from '../controllers/patientController';
 import * as appointmentController from '../controllers/appointmentController';
 import * as prescriptionController from '../controllers/prescriptionController';
@@ -17,6 +18,7 @@ import { uploadLogo, uploadDocument } from '../middleware/upload';
 const router = Router();
 
 router.post('/auth/login', authController.loginDoctor);
+router.put('/auth/secretary/profile', authenticate, updateSecretaryProfile);
 router.post('/auth/secretary/login', authController.loginSecretary);
 router.post('/auth/patient/login', authController.loginPatient);
 router.get('/auth/me', authenticate, authController.getMe);

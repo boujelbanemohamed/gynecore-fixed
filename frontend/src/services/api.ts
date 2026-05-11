@@ -25,6 +25,7 @@ export const authAPI = {
   loginDoctor: (email: string, password: string) => api.post('/auth/login', { email, password }),
   loginPatient: (email: string, password: string) => api.post('/auth/patient/login', { email, password }),
   loginSecretary: (email: string, password: string) => api.post('/auth/secretary/login', { email, password }),
+  updateSecretaryProfile: (data: any) => api.put('/auth/secretary/profile', data),
   getMe: () => api.get('/auth/me'),
 };
 

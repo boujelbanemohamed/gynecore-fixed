@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { DoctorRoute, PatientRoute, SecretaryRoute, PublicRoute } from './components/shared/RouteGuards';
 import DoctorLayout from './components/doctor/Layout';
 import PatientLayout from './components/patient/Layout';
+import SecretaryLayout from './components/secretary/Layout';
 import DoctorLogin from './pages/doctor/Login';
 import Dashboard from './pages/doctor/Dashboard';
 import Patients from './pages/doctor/Patients';
@@ -19,6 +20,7 @@ import PatientPrescriptions from './pages/patient/Prescriptions';
 import PatientRendezVous from './pages/patient/RendezVous';
 import SecretaryLogin from './pages/secretary/Login';
 import SecretaryDashboard from './pages/secretary/Dashboard';
+import SecretaryProfile from './pages/secretary/Profile';
 
 const App: React.FC = () => (
   <AuthProvider>
@@ -50,7 +52,10 @@ const App: React.FC = () => (
           </Route>
         </Route>
         <Route element={<SecretaryRoute />}>
-          <Route path="/secretary/dashboard" element={<SecretaryDashboard />} />
+          <Route element={<SecretaryLayout />}>
+            <Route path="/secretary/dashboard" element={<SecretaryDashboard />} />
+            <Route path="/secretary/profile" element={<SecretaryProfile />} />
+          </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

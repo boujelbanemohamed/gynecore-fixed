@@ -3,7 +3,7 @@ import { authAPI } from '../services/api';
 
 export type UserRole = 'DOCTOR' | 'ASSISTANT' | 'SECRETARY' | 'PATIENT';
 export interface AuthUser { id: string; email: string; firstName: string; lastName: string; role: UserRole; patientId?: string; doctorId?: string; }
-interface AuthContextType { user: AuthUser | null; token: string | null; loading: boolean; loginDoctor: (email: string, password: string) => Promise<void>; loginPatient: (email: string, password: string) => Promise<void>; loginSecretary: (email: string, password: string) => Promise<void>; logout: () => void; isDoctor: boolean; isPatient: boolean; isSecretary: boolean; }
+interface AuthContextType { user: AuthUser | null; token: string | null; loading: boolean; loginDoctor: (email: string, password: string) => Promise<void>; loginPatient: (email: string, password: string) => Promise<void>; loginSecretary: (email: string, password: string) => Promise<void>; logout: () => void; setUser: (u: any) => void; isDoctor: boolean; isPatient: boolean; isSecretary: boolean; }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, loginDoctor, loginPatient, loginSecretary, logout, isDoctor: user?.role === 'DOCTOR' || user?.role === 'ASSISTANT', isPatient: user?.role === 'PATIENT', isSecretary: user?.role === 'SECRETARY' }}>
+    <AuthContext.Provider value={{ user, token, loading, loginDoctor, loginPatient, loginSecretary, logout, setUser, isDoctor: user?.role === 'DOCTOR' || user?.role === 'ASSISTANT', isPatient: user?.role === 'PATIENT', isSecretary: user?.role === 'SECRETARY' }}>
       {children}
     </AuthContext.Provider>
   );
