@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { DoctorRoute, PatientRoute, PublicRoute } from './components/shared/RouteGuards';
+import { DoctorRoute, PatientRoute, SecretaryRoute, PublicRoute } from './components/shared/RouteGuards';
 import DoctorLayout from './components/doctor/Layout';
 import PatientLayout from './components/patient/Layout';
 import DoctorLogin from './pages/doctor/Login';
@@ -17,6 +17,8 @@ import PatientDashboard from './pages/patient/Dashboard';
 import PatientDossier from './pages/patient/Dossier';
 import PatientPrescriptions from './pages/patient/Prescriptions';
 import PatientRendezVous from './pages/patient/RendezVous';
+import SecretaryLogin from './pages/secretary/Login';
+import SecretaryDashboard from './pages/secretary/Dashboard';
 
 const App: React.FC = () => (
   <AuthProvider>
@@ -26,6 +28,7 @@ const App: React.FC = () => (
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<DoctorLogin />} />
           <Route path="/patient/login" element={<PatientLogin />} />
+          <Route path="/secretary/login" element={<SecretaryLogin />} />
         </Route>
         <Route element={<DoctorRoute />}>
           <Route element={<DoctorLayout />}>
@@ -45,6 +48,9 @@ const App: React.FC = () => (
             <Route path="/patient/prescriptions" element={<PatientPrescriptions />} />
             <Route path="/patient/rendez-vous" element={<PatientRendezVous />} />
           </Route>
+        </Route>
+        <Route element={<SecretaryRoute />}>
+          <Route path="/secretary/dashboard" element={<SecretaryDashboard />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

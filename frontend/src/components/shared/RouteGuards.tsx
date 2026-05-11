@@ -27,3 +27,10 @@ export const PublicRoute = () => {
   }
   return <Outlet />;
 };
+
+export const SecretaryRoute: React.FC = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="page-container" style={{textAlign:'center',paddingTop:60}}>Chargement...</div>;
+  if (!user || user.role !== 'SECRETARY') return <Navigate to="/secretary/login" replace />;
+  return <Outlet />;
+};
