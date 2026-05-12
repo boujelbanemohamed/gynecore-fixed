@@ -58,43 +58,32 @@ pipeline {
       }
     }
 
-    stage('Stop old processes') {
-      steps {
-        sh 'lsof -t -i:4000 | xargs kill -9 2>/dev/null || true'
-        sh 'lsof -t -i:3000 | xargs kill -9 2>/dev/null || true'
-      }
-    }
-
     stage('Deploy') {
       steps {
-        dir('backend') {
-          sh '''
-            cp -f .env .env.backup 2>/dev/null || true
-            echo "DATABASE_URL=$DATABASE_URL_CREDENTIALS" > .env
-            echo "JWT_SECRET=jenkins-build-secret" >> .env
-            echo "JWT_EXPIRES_IN=24h" >> .env
-            echo "PORT=4000" >> .env
-            echo "NODE_ENV=production" >> .env
-            echo "CORS_ORIGIN=http://localhost:3000" >> .env
-            BUILD_ID=dontKillMe JENKINS_NODE_COOKIE=dontKillMe nohup npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
-          '''
-        }
-        dir('frontend') {
-          sh 'BUILD_ID=dontKillMe JENKINS_NODE_COOKIE=dontKillMe nohup npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &'
-        }
-      }
-    }
-
-    stage('Health Check') {
-      steps {
         sh '''
-          echo "Waiting 20s for services to start..."
-          sleep 20
-          echo "Checking Backend on port 4000..."
-          curl -sf http://localhost:4000 || echo "Backend not responding"
-          echo "Checking Frontend on port 3000..."
-          curl -sf http://localhost:3000 || echo "Frontend not responding"
-          echo "Deployment complete!"
+          lsof -t -i:4000 | xargs kill -9 2>/dev/null || true
+          lsof -t -i:3000 | xargs kill -9 2>/dev/null || true
+
+          cd backend
+          cp -f .env .env.backup 2>/dev/null || true
+          echo "DATABASE_URL=$DATABASE_URL_CREDENTIALS" > .env
+          echo "JWT_SECRET=jenkins-build-secret" >> .env
+          echo "JWT_EXPIRES_IN=24h" >> .env
+          echo "PORT=4000" >> .env
+          echo "NODE_ENV=production" >> .env
+          echo "CORS_ORIGIN=http://localhost:3000" >> .env
+          nohup npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
+          echo "Backend started, waiting..."
+
+          cd ../frontend
+          nohup npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &
+          echo "Frontend started, waiting..."
+
+          sleep 25
+          echo "=== Health Check ==="
+          curl -sf http://localhost:4000 && echo "Backend OK" || echo "Backend starting..."
+          curl -sf http://localhost:3000 && echo "Frontend OK" || echo "Frontend starting..."
+          echo "Deployment done!"
         '''
       }
     }
@@ -102,7 +91,7 @@ pipeline {
 
   post {
     success {
-      echo 'GyneCare deployed successfully on localhost:3000!'
+      echo 'GyneCare pipeline complete!'
     }
   }
 }
