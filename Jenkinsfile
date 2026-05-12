@@ -23,6 +23,11 @@ pipeline {
                 dir('frontend') { sh 'npm run build' }
             }
         }
+        stage('Copy Build to Local') {
+            steps {
+                sh 'rm -rf /Users/mohamedboujelbane/Desktop/gynecare-fixed/frontend/build && cp -r frontend/build /Users/mohamedboujelbane/Desktop/gynecare-fixed/frontend/build'
+            }
+        }
         stage('SonarQube Backend') {
             steps {
                 dir('backend') {
