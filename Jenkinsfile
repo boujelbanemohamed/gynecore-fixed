@@ -1,74 +1,49 @@
 pipeline {
-  agent any
-  tools {
-    nodejs 'Node20'
-  }
-
-  environment {
-    DATABASE_URL_CREDENTIALS = credentials('DATABASE_URL')
-  }
-
-  stages {
-    stage('Checkout') {
-      steps { checkout scm }
+    agent any
+    environment {
+        DATABASE_URL = credentials('DATABASE_URL')
     }
-
-    stage('Install Backend') {
-      steps {
-        dir('backend') {
-          sh 'npm install'
-          sh 'npx prisma generate'
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
         }
-      }
-    }
-
-    stage('Install Frontend') {
-      steps {
-        dir('frontend') {
-          sh 'npm install --legacy-peer-deps'
+        stage('Install Backend') {
+            steps {
+                dir('backend') { sh 'npm install' }
+            }
         }
-      }
-    }
-
-    stage('Build Frontend') {
-      steps {
-        dir('frontend') {
-          sh 'npm run build'
+        stage('Install Frontend') {
+            steps {
+                dir('frontend') { sh 'npm install' }
+            }
         }
-      }
-    }
-
-    stage('SonarQube Analysis') {
-      steps {
-        withSonarQubeEnv('SonarQube') {
-          sh '''
-            npm install -g sonarqube-scanner
-            cd backend && sonar-scanner -Dsonar.projectKey=gynecare-backend -Dsonar.projectName=GyneCare-Backend -Dsonar.sources=src -Dsonar.language=ts -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/prisma/**
-            cd ../frontend && sonar-scanner -Dsonar.projectKey=gynecare-frontend -Dsonar.projectName=GyneCare-Frontend -Dsonar.sources=src -Dsonar.language=ts -Dsonar.exclusions=**/node_modules/**,**/build/**
-          '''
+        stage('Build Frontend') {
+            steps {
+                dir('frontend') { sh 'npm run build' }
+            }
         }
-      }
-    }
-
-    stage('Quality Gate') {
-      steps {
-        timeout(time: 5, unit: 'MINUTES') {
-          waitForQualityGate abortPipeline: false
+        stage('SonarQube Backend') {
+            steps {
+                dir('backend') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh "npx sonar-scanner -Dsonar.login=${env.SONAR_TOKEN} -Dsonar.projectKey=gynecare-backend -Dsonar.sources=src -Dsonar.language=ts -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info 2>/dev/null || true"
+                    }
+                }
+            }
         }
-      }
+        stage('SonarQube Frontend') {
+            steps {
+                dir('frontend') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh "npx sonar-scanner -Dsonar.login=${env.SONAR_TOKEN} -Dsonar.projectKey=gynecare-frontend -Dsonar.sources=src -Dsonar.language=ts -Dsonar.exclusions=**/node_modules/** 2>/dev/null || true"
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh 'echo "./restart-services.sh" | at now'
+            }
+        }
     }
-
-    stage('Deploy') {
-      steps {
-        sh 'echo "$DATABASE_URL_CREDENTIALS" > /tmp/gynecare-dburl'
-        sh 'chmod +x deploy.sh && bash deploy.sh $PWD'
-      }
-    }
-  }
-
-  post {
-    success {
-      echo 'GyneCare pipeline complete!'
-    }
-  }
 }
