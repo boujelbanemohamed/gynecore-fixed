@@ -49,12 +49,14 @@ pipeline {
               -Dsonar.sources=src \
               -Dsonar.language=ts \
               -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/prisma/**
+              -Dsonar.branch.name=stable
             cd ../frontend && sonar-scanner \
               -Dsonar.projectKey=gynecare-frontend \
               -Dsonar.projectName=GyneCare-Frontend \
               -Dsonar.sources=src \
               -Dsonar.language=ts \
               -Dsonar.exclusions=**/node_modules/**,**/build/**
+              -Dsonar.branch.name=stable
           '''
         }
       }
