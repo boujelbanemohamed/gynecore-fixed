@@ -13,6 +13,7 @@ import * as secretaryController from '../controllers/secretaryController';
 import * as spController from '../controllers/secretaryPortalController';
 import * as passwordResetController from '../controllers/passwordResetController';
 import * as certificateController from '../controllers/certificateController';
+import * as medicalLetterController from '../controllers/medicalLetterController';
 import * as unavailableSlotController from '../controllers/unavailableSlotController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
 
@@ -62,6 +63,11 @@ router.get('/doctor/certificates', authenticate, authorizeDoctor, certificateCon
 router.get('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.getCertificateById);
 router.post('/doctor/certificates', authenticate, authorizeDoctor, certificateController.createCertificate);
 router.delete('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.deleteCertificate);
+router.get('/doctor/medical-letters', authenticate, authorizeDoctor, medicalLetterController.getMedicalLetters);
+router.get('/doctor/medical-letters/:id', authenticate, authorizeDoctor, medicalLetterController.getMedicalLetterById);
+router.post('/doctor/medical-letters', authenticate, authorizeDoctor, medicalLetterController.createMedicalLetter);
+router.put('/doctor/medical-letters/:id', authenticate, authorizeDoctor, medicalLetterController.updateMedicalLetter);
+router.delete('/doctor/medical-letters/:id', authenticate, authorizeDoctor, medicalLetterController.deleteMedicalLetter);
 
 router.get('/doctor/profile', authenticate, authorizeDoctor, profileController.getProfile);
 router.put('/doctor/profile', authenticate, authorizeDoctor, profileController.updateProfile);

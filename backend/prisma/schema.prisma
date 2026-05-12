@@ -108,6 +108,7 @@ model Patient {
   appointments        Appointment[]
   documents           Document[]
   certificates         Certificate[]
+  medicalLetters       MedicalLetter[]
 
   @@map("patients")
 }
@@ -208,6 +209,21 @@ model Certificate {
   updatedAt      DateTime         @updatedAt
 
   @@map("certificates")
+}
+
+
+model MedicalLetter {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id])
+  type       String
+  recipient  String
+  subject    String
+  content    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("medical_letters")
 }
 
 model AuditLog {

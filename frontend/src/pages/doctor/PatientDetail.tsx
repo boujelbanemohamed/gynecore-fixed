@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doctorAPI } from '../../services/api';
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
-type Tab = 'info'|'consultations'|'prescriptions'|'certificates'|'appointments'|'documents';
+type Tab = 'info'|'consultations'|'prescriptions'|'certificates'|'letters'|'appointments'|'documents';
 type ConsultTab = 'accueil'|'examen'|'bilan'|'contexte';
 type ClinicalCtx = 'obstetrique'|'infertilite'|null;
 
@@ -67,6 +67,12 @@ const PatientDetail: React.FC = () => {
   const [printLogoUrl, setPrintLogoUrl] = useState('');
   const [doctorProfile, setDoctorProfile] = useState<any>(null);
   const [editingPrescId, setEditingPrescId] = useState<string | null>(null);
+
+  // Medical Letter states
+  const [letters, setLetters] = useState<any[]>([]);
+  const [letterForm, setLetterForm] = useState({ type: 'SPECIALIST_REFERRAL', recipient: '', subject: '', body: '' });
+  const [letterModal, setLetterModal] = useState(false);
+  const [editingLetterId, setEditingLetterId] = useState<string | null>(null);
 
   // Certificate states
   const [showCertModal, setShowCertModal] = useState(false);
@@ -339,6 +345,100 @@ const PatientDetail: React.FC = () => {
     } catch { alert('Erreur lors du chargement'); }
   };
 
+  // -- Medical Letter functions --
+  const letterTypeLabels: Record<string, string> = { SPECIALIST_REFERRAL: 'Courrier vers specialiste', EMPLOYER: 'Courrier employeur', MEDICAL_REPORT: 'Rapport medical', DISCHARGE_SUMMARY: 'Synthese de sortie', OTHER: 'Autre' };
+  const letterTypeIcons: Record<string, string> = { SPECIALIST_REFERRAL: 'urologie', EMPLOYER: 'hospital', MEDICAL_REPORT: 'clipboard2-pulse', DISCHARGE_SUMMARY: 'file-earmark-medical', OTHER: 'envelope' };
+
+  const openLetterModal = (type: string = 'SPECIALIST_REFERRAL') => {
+    setEditingLetterId(null);
+    setLetterForm({ type, recipient: '', subject: '', body: '' });
+    setLetterModal(true);
+  };
+
+  const handleEditLetter = (letter: any) => {
+    setEditingLetterId(letter.id);
+    const c = letter.content || {};
+    setLetterForm({ type: letter.type, recipient: letter.recipient || '', subject: letter.subject || '', body: c.body || '' });
+    setLetterModal(true);
+  };
+
+  const handleSaveLetter = async () => {
+    if (!letterForm.recipient || !letterForm.subject) { alert('Veuillez remplir le destinataire et l\'objet'); return; }
+    try {
+      const data = { patientId: id, type: letterForm.type, recipient: letterForm.recipient, subject: letterForm.subject, content: { body: letterForm.body } };
+      if (editingLetterId) { await doctorAPI.updateMedicalLetter(editingLetterId, data); }
+      else { await doctorAPI.createMedicalLetter(data); }
+      setLetterModal(false);
+      loadLetters();
+    } catch (e: any) { alert(e.response?.data?.error || 'Erreur'); }
+  };
+
+  const handleDeleteLetter = async (letterId: string) => {
+    if (!confirm('Supprimer ce courrier ?')) return;
+    try { await doctorAPI.deleteMedicalLetter(letterId); loadLetters(); } catch {}
+  };
+
+  const handlePrintLetter = async (letterId: string) => {
+    try {
+      const res = await doctorAPI.getMedicalLetterById(letterId);
+      const letter = res.data.data;
+      const c = letter.content || {};
+      const pName = (patient.user?.firstName||'') + ' ' + (patient.user?.lastName||'');
+      const pAge = patient.dateOfBirth ? Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25*24*60*60*1000)) + ' ans' : '--';
+      const fullAddr = [(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', ');
+      let logoHtml = '';
+      if (doctorProfile?.logo) {
+        try {
+          const imgUrl = API_BASE.replace('/api','') + doctorProfile.logo;
+          const imgRes = await fetch(imgUrl);
+          const blob = await imgRes.blob();
+          logoHtml = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve('<img class="rx-doctor-logo" src="' + reader.result + '" />');
+            reader.readAsDataURL(blob);
+          });
+        } catch { logoHtml = ''; }
+      }
+      const letterTitles: Record<string,string> = {
+        SPECIALIST_REFERRAL: "COURRIER D\'ORIENTATION SPECIALISTE",
+        EMPLOYER: "COURRIER MEDICAL - EMPLOYEUR",
+        MEDICAL_REPORT: 'COMPTE RENDU MEDICAL',
+        DISCHARGE_SUMMARY: "COMPTE RENDU D\'HOSPITALISATION",
+        OTHER: 'COURRIER MEDICAL',
+      };
+      const title = letterTitles[letter.type] || 'COURRIER MEDICAL';
+      const fmt = (d: string) => d ? new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '.......................................';
+      const fld = (v: string) => v || '.......................................';
+      let bodyHtml = '';
+      if (letter.recipient) {
+        bodyHtml += '<div class="cert-details"><p><strong>A l\'attention de :</strong> ' + letter.recipient + '</p></div>';
+      }
+      if (letter.subject) {
+        bodyHtml += '<div class="cert-details"><p><strong>Objet :</strong> ' + letter.subject + '</p></div>';
+      }
+      if (c.body) {
+        bodyHtml += '<div class="cert-observations" style="white-space:pre-wrap;line-height:1.8">' + c.body + '</div>';
+      }
+      const html = '<div>' +
+        '<div class="rx-header">' + logoHtml +
+        '<div class="rx-info">' +
+        '<div class="rx-clinic-name">' + (doctorProfile?.clinicName||'') + '</div>' +
+        '<h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
+        '<div class="rx-specialty">' + (doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
+        '<div class="rx-services">' + (doctorProfile?.services||'') + '</div>' +
+        '<div class="rx-address">' + fullAddr + '</div>' +
+        '<div class="rx-contact">' + (doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + (doctorProfile?.email||'') + '</div>' +
+        '</div></div>' +
+        '<div class="rx-title">' + title + '</div>' +
+        '<div class="rx-patient"><div><strong>Patiente :</strong> ' + pName + '</div><div><strong>Age :</strong> ' + pAge + '</div></div>' +
+        '<div class="rx-date-place">Fait a ' + (doctorProfile?.city||'Tunis') + ', le ' + fmt(letter.createdAt) + '</div>' +
+        '<div class="cert-body">' + bodyHtml + '</div>' +
+        '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
+        '</div>';
+      printInIframe(html);
+    } catch { alert('Erreur lors du chargement'); }
+  };
+
   // -- Certificate functions --
   const certFields: Record<string, {key:string,label:string,type:'text'|'date'|'textarea'|'select',placeholder?:string,options?:string[]}[]> = {
     APTITUDE: [
@@ -568,6 +668,10 @@ const getCertFields = (t: string) => {
       setCertificates(r.data.data?.certificates || r.data.data || []);
     }).catch(() => {});
   };
+  const loadLetters = () => {
+    doctorAPI.getMedicalLetters({ patientId: id }).then((r: any) => setLetters(r.data.data?.letters || [])).catch(() => {});
+  };
+  useEffect(() => { loadLetters(); }, [id]);
   useEffect(() => { loadCertificates(); }, [id]);
 
     const handlePrintCert = async (certId: string) => {
@@ -744,6 +848,7 @@ const getCertFields = (t: string) => {
     { key: 'consultations', label: 'Consultations', count: patient.consultations?.length },
     { key: 'prescriptions', label: 'Ordonnances', count: patient.prescriptions?.length },
     { key: 'certificates', label: 'Certificats', count: certificates?.length },
+  { key: 'letters', label: 'Courriers medicaux', count: letters?.length },
     { key: 'appointments', label: 'Rendez-vous', count: patient.appointments?.length },
     { key: 'documents', label: 'Documents', count: documents?.length },
   ];
@@ -906,6 +1011,79 @@ const getCertFields = (t: string) => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── TAB: Courriers medicaux ── */}
+      {tab === 'letters' && (
+        <div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            {Object.entries(letterTypeLabels).map(([k, v]) => (
+              <button key={k} className={'btn btn-sm ' + (letterForm.type === k ? 'btn-primary' : 'btn-outline')} onClick={() => openLetterModal(k)} style={{ fontSize: 12 }}>
+                + {v}
+              </button>
+            ))}
+          </div>
+          {!letters?.length ? (
+            <div className="card"><div className="empty-state"><div className="empty-icon">✉️</div><p>Aucun courrier medical</p><p className="text-muted text-sm">Choisissez un type ci-dessus pour en creer un</p></div></div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {letters.map((letter: any) => (
+                <div className="card" key={letter.id} style={{ borderLeft: '3px solid #6f42c1' }}>
+                  <div className="card-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>✉️</span>
+                      <span style={{ fontWeight: 500 }}>{letterTypeLabels[letter.type] || letter.type}</span>
+                      <span className="badge badge-info">{new Date(letter.createdAt).toLocaleDateString('fr-FR')}</span>
+                      <span className="text-muted text-sm">→ {letter.recipient}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-outline btn-sm" onClick={() => handlePrintLetter(letter.id)}>🖨 Imprimer</button>
+                      <button className="btn btn-outline btn-sm" onClick={() => handleEditLetter(letter)}>✏ Modifier</button>
+                      <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#f5c6c3' }} onClick={() => handleDeleteLetter(letter.id)}>Supprimer</button>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}><strong>Objet :</strong> {letter.subject}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal Courrier */}
+      {letterModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, width: 600, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3>{editingLetterId ? 'Modifier le courrier' : 'Nouveau courrier medical'}</h3>
+              <button className="btn btn-outline btn-sm" onClick={() => setLetterModal(false)}>Fermer</button>
+            </div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Type</label>
+                <select value={letterForm.type} onChange={e => setLetterForm({ ...letterForm, type: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }}>
+                  {Object.entries(letterTypeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Destinataire</label>
+                <input value={letterForm.recipient} onChange={e => setLetterForm({ ...letterForm, recipient: e.target.value })} placeholder="Dr Dupont, Hopital Saint-Louis..." style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Objet</label>
+                <input value={letterForm.subject} onChange={e => setLetterForm({ ...letterForm, subject: e.target.value })} placeholder="Objet du courrier" style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Contenu du courrier</label>
+                <textarea value={letterForm.body} onChange={e => setLetterForm({ ...letterForm, body: e.target.value })} placeholder="Redigez le contenu du courrier ici..." rows={12} style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6, fontFamily: 'inherit', lineHeight: 1.7 }} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button className="btn btn-outline" onClick={() => setLetterModal(false)}>Annuler</button>
+                <button className="btn btn-primary" onClick={handleSaveLetter}>{editingLetterId ? 'Modifier' : 'Creer le courrier'}</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
