@@ -76,11 +76,11 @@ pipeline {
             echo "PORT=4000" >> .env
             echo "NODE_ENV=production" >> .env
             echo "CORS_ORIGIN=http://localhost:3000" >> .env
-            setsid npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
+            BUILD_ID=dontKillMe JENKINS_NODE_COOKIE=dontKillMe nohup npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
           '''
         }
         dir('frontend') {
-          sh 'setsid npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &'
+          sh 'BUILD_ID=dontKillMe JENKINS_NODE_COOKIE=dontKillMe nohup npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &'
         }
       }
     }
