@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const DoctorLogin: React.FC = () => {
-  const { loginDoctor } = useAuth();
+const SecretaryLogin: React.FC = () => {
+  const { loginSecretary } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -11,7 +11,7 @@ const DoctorLogin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
-    try { await loginDoctor(email, password); }
+    try { await loginSecretary(email, password); }
     catch (err: any) { setError(err.response?.data?.error || 'Erreur de connexion'); }
     finally { setLoading(false); }
   };
@@ -20,17 +20,17 @@ const DoctorLogin: React.FC = () => {
     <div className="login-page">
       <div className="login-left">
         <h1>Gyne<span>Care</span></h1>
-        <p>Système de gestion clinique gynécologique — sécurisé, rapide, efficace.</p>
+        <p>Systeme de gestion clinique gynecologique</p>
         <div className="login-features">
-          {[['⊞','Tableau de bord'],['📋','Dossiers médicaux'],['💊','Ordonnances'],['📅','Planning']].map(([icon,text]) => (
+          {[['~','Secretaire'],['<','Planning'],['>','Patients']].map(([icon,text]) => (
             <div className="login-feature" key={text}><div className="login-feature-icon">{icon}</div>{text}</div>
           ))}
         </div>
       </div>
       <div className="login-right">
         <div className="login-form-box">
-          <h2>Connexion médecin</h2>
-          <p>Accédez à votre espace médical sécurisé</p>
+          <h2>Connexion secretaire</h2>
+          <p>Accedez a votre espace secretaire</p>
           {error && <div className="alert alert-error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -46,10 +46,10 @@ const DoctorLogin: React.FC = () => {
             </button>
           </form>
           <div className="login-divider">ou</div>
-          <div className="login-switch">Vous êtes patient ? <Link to="/patient/login">Portail patient →</Link> | Vous êtes secrétaire ? <Link to="/secretary/login">Portail secrétaire →</Link></div>
+          <div className="login-switch"><Link to="/login">Connexion medecin</Link> | <Link to="/patient/login">Portail patient</Link></div>
         </div>
       </div>
     </div>
   );
 };
-export default DoctorLogin;
+export default SecretaryLogin;

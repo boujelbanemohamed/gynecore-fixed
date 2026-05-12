@@ -8,6 +8,7 @@ const navItems = [
   { to: '/consultations', icon: '📋', label: 'Consultations' },
   { to: '/calendar', icon: '📅', label: 'Planning' },
   { to: '/secretaries', icon: '👤', label: 'Secrétaires' },
+  { to: '/unavailable-slots', icon: '🚫', label: 'Indisponibilités' },
   { to: '/settings', icon: '⚙', label: 'Paramètres' },
 ];
 

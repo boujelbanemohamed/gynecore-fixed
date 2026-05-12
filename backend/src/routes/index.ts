@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { authenticate, authorizeDoctor, authorizePatient } from '../middleware/auth';
-import * as authController from '../controllers/authController';
+import { authenticate, authorizeDoctor, authorizePatient, authorizeSecretary } from '../middleware/auth';
+import * as authController from '../controllers/authController'
 import * as patientController from '../controllers/patientController';
 import * as appointmentController from '../controllers/appointmentController';
 import * as prescriptionController from '../controllers/prescriptionController';
@@ -10,13 +10,17 @@ import * as patientPortalController from '../controllers/patientPortalController
 import * as consultationController from '../controllers/consultationController';
 import * as auditController from '../controllers/auditController';
 import * as secretaryController from '../controllers/secretaryController';
+import * as spController from '../controllers/secretaryPortalController';
 import * as passwordResetController from '../controllers/passwordResetController';
 import * as certificateController from '../controllers/certificateController';
+import * as unavailableSlotController from '../controllers/unavailableSlotController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
 
 const router = Router();
 
 router.post('/auth/login', authController.loginDoctor);
+router.put('/auth/secretary/profile', authenticate, authController.updateSecretaryProfile);
+router.post('/auth/secretary/login', authController.loginSecretary);
 router.post('/auth/patient/login', authController.loginPatient);
 router.get('/auth/me', authenticate, authController.getMe);
 router.post('/auth/forgot-password', passwordResetController.forgotPassword);
@@ -24,6 +28,13 @@ router.post('/auth/verify-reset-token', passwordResetController.verifyResetToken
 router.post('/auth/reset-password', passwordResetController.resetPassword);
 
 router.get('/doctor/audit-logs', authenticate, authorizeDoctor, auditController.getAuditLogs);
+
+// Secretary management
+router.get('/doctor/secretaries', authenticate, authorizeDoctor, secretaryController.listSecretaries);
+router.post('/doctor/secretaries', authenticate, authorizeDoctor, secretaryController.createSecretary);
+router.post('/doctor/secretaries/:id/reset-password', authenticate, authorizeDoctor, secretaryController.resetSecretaryPassword);
+router.put('/doctor/secretaries/:id', authenticate, authorizeDoctor, secretaryController.updateSecretary);
+router.patch('/doctor/secretaries/:id/toggle-status', authenticate, authorizeDoctor, secretaryController.toggleSecretaryStatus);
 
 router.get('/doctor/dashboard', authenticate, authorizeDoctor, patientController.getDashboardStats);
 
@@ -64,5 +75,28 @@ router.get('/patient/dossier', authenticate, authorizePatient, patientPortalCont
 router.get('/patient/consultations', authenticate, authorizePatient, patientPortalController.getMyConsultations);
 router.get('/patient/prescriptions', authenticate, authorizePatient, prescriptionController.getPatientPrescriptions);
 router.get('/patient/appointments', authenticate, authorizePatient, appointmentController.getPatientAppointments);
+
+// ===== Secretary portal routes =====
+router.get('/secretary/dashboard', authenticate, authorizeSecretary, spController.getDashboardStats);
+router.get('/secretary/doctor-info', authenticate, authorizeSecretary, spController.getDoctorInfo);
+router.put('/auth/secretary/password', authenticate, authorizeSecretary, spController.changePassword);
+router.get('/secretary/patients', authenticate, authorizeSecretary, spController.getPatients);
+router.get('/secretary/patients/:id', authenticate, authorizeSecretary, spController.getPatientById);
+router.post('/secretary/patients', authenticate, authorizeSecretary, spController.createPatient);
+router.put('/secretary/patients/:id', authenticate, authorizeSecretary, spController.updatePatientAdmin);
+router.get('/secretary/consultations', authenticate, authorizeSecretary, spController.getConsultations);
+router.get('/secretary/appointments', authenticate, authorizeSecretary, spController.getAppointments);
+router.post('/secretary/appointments', authenticate, authorizeSecretary, spController.createAppointment);
+router.put('/secretary/appointments/:id', authenticate, authorizeSecretary, spController.updateAppointment);
+router.patch('/secretary/appointments/:id/status', authenticate, authorizeSecretary, spController.updateAppointmentStatus);
+router.delete('/secretary/appointments/:id', authenticate, authorizeSecretary, spController.deleteAppointment);
+
+
+
+router.get('/doctor/unavailable-slots', authenticate, authorizeDoctor, unavailableSlotController.getUnavailableSlots);
+router.post('/doctor/unavailable-slots', authenticate, authorizeDoctor, unavailableSlotController.createUnavailableSlot);
+router.delete('/doctor/unavailable-slots/:id', authenticate, authorizeDoctor, unavailableSlotController.deleteUnavailableSlot);
+
+router.get('/secretary/unavailable-slots', authenticate, authorizeSecretary, unavailableSlotController.getUnavailableSlots);
 
 export default router;

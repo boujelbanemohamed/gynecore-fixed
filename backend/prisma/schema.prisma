@@ -17,8 +17,12 @@ enum Role {
 enum AppointmentStatus {
   SCHEDULED
   CONFIRMED
-  CANCELLED
+  PENDING
+  ARRIVED
+  IN_PROGRESS
   COMPLETED
+  CANCELLED
+  POSTPONED
   NO_SHOW
 }
 
@@ -41,6 +45,7 @@ enum ConsultationType {
 }
 
 model User {
+  unavailableSlots UnavailableSlot[]
   id             String   @id @default(cuid())
   email          String   @unique
   password       String
@@ -218,3 +223,17 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
+model UnavailableSlot {
+  id        String   @id @default(uuid())
+  doctorId  String
+  startTime DateTime
+  endTime   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+  doctor    User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@index([startTime, endTime])
+}
+

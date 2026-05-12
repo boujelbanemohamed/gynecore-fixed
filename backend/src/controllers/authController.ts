@@ -91,3 +91,57 @@ export const getMe = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 };
+
+
+export const loginSecretary = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = loginSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.isActive || user.role !== Role.SECRETARY) {
+      return res.status(401).json({ success: false, error: 'Identifiants invalides' });
+    }
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ success: false, error: 'Identifiants invalides' });
+    const token = jwt.sign(
+      { userId: user.id, role: user.role, email: user.email },
+      process.env.JWT_SECRET!,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' } as SignOptions,
+    );
+    return res.json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id, email: user.email,
+          firstName: user.firstName, lastName: user.lastName, role: user.role,
+          doctorId: user.doctorId,
+        },
+      },
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: err.errors[0].message });
+    }
+    console.error('[loginSecretary] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+
+export const updateSecretaryProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Non authentifie' });
+    const { firstName, lastName, email, phone } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.role !== 'SECRETARY') return res.status(403).json({ success: false, message: 'Acces refuse' });
+    if (email && email !== user.email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) return res.status(400).json({ success: false, message: 'Email deja utilise' });
+    }
+    const updated = await prisma.user.update({ where: { id: userId }, data: { firstName, lastName, email, phone } });
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

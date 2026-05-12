@@ -41,6 +41,14 @@ const Calendar: React.FC = () => {
   });
 
   // Appointment form
+  // Unavailable slots
+  const [unavailSlots, setUnavailSlots] = useState<any[]>([]);
+  const [showUnavailModal, setShowUnavailModal] = useState(false);
+  const [unavailForm, setUnavailForm] = useState({ startTime: '', endTime: '', reason: '' });
+  const [unavailSubmitting, setUnavailSubmitting] = useState(false);
+  const [unavailError, setUnavailError] = useState('');
+
+  // Appointment form
   const [aptForm, setAptForm] = useState({
     startTime:'', endTime:'', type:'', reason:'', notes:''
   });
@@ -50,6 +58,8 @@ const Calendar: React.FC = () => {
     const start=new Date(y,m,1), end=new Date(y,m+1,0,23,59,59);
     doctorAPI.getAppointments({start:start.toISOString(),end:end.toISOString()})
       .then(r=>setAppointments(r.data.data)).catch(()=>{});
+    doctorAPI.getUnavailableSlots({startDate:start.toISOString(),end:end.toISOString()})
+      .then(r=>setUnavailSlots(r.data.data.slots||[])).catch(()=>{});
   }, [currentDate]);
 
   const y=currentDate.getFullYear(), m=currentDate.getMonth();
@@ -62,6 +72,11 @@ const Calendar: React.FC = () => {
     return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()===day;
   });
   const selectedApts=selected?getApts(selected.getDate()):[];
+  const getUnavailForDay=(day:number)=>unavailSlots.filter(s=>{
+    const d=new Date(s.startTime);
+    return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()===day;
+  });
+  const selectedUnavail=selected?getUnavailForDay(selected.getDate()):[];
   const months=['Janvier','F\u00e9vrier','Mars','Avril','Mai','Juin','Juillet','Ao\u00fbt','Septembre','Octobre','Novembre','D\u00e9cembre'];
 
   // Search patients
@@ -94,6 +109,53 @@ const Calendar: React.FC = () => {
     setNewPatient({ firstName:'', lastName:'', email:'', phone:'', dateOfBirth:'', bloodType:'', city:'', allergies:'', contraceptionMethod:'' });
     setError('');
     setShowModal(true);
+  };
+
+  const openUnavailModal = () => {
+    if (!selected) return;
+    const day = selected.getDate().toString().padStart(2,'0');
+    const month = (selected.getMonth()+1).toString().padStart(2,'0');
+    const dateStr = `${selected.getFullYear()}-${month}-${day}`;
+    setUnavailForm({ startTime: `${dateStr}T08:00`, endTime: `${dateStr}T12:00`, reason: '' });
+    setUnavailError('');
+    setShowUnavailModal(true);
+  };
+
+  const handleCreateUnavail = async () => {
+    if (!unavailForm.startTime || !unavailForm.endTime) {
+      setUnavailError('Veuillez remplir les heures de debut et fin.');
+      return;
+    }
+    setUnavailSubmitting(true);
+    setUnavailError('');
+    try {
+      await doctorAPI.createUnavailableSlot({
+        startTime: new Date(unavailForm.startTime).toISOString(),
+        endTime: new Date(unavailForm.endTime).toISOString(),
+        reason: unavailForm.reason || null,
+      });
+      setShowUnavailModal(false);
+      const startY=currentDate.getFullYear(), startM=currentDate.getMonth();
+      const start=new Date(startY,startM,1), end=new Date(startY,startM+1,0,23,59,59);
+      const [aptRes, slotRes] = await Promise.all([
+        doctorAPI.getAppointments({start:start.toISOString(),end:end.toISOString()}),
+        doctorAPI.getUnavailableSlots({startDate:start.toISOString(),end:end.toISOString()}),
+      ]);
+      setAppointments(aptRes.data.data);
+      setUnavailSlots(slotRes.data.data.slots||[]);
+    } catch (err: any) {
+      setUnavailError(err.response?.data?.message || 'Erreur lors de la creation du creneau.');
+    } finally {
+      setUnavailSubmitting(false);
+    }
+  };
+
+  const handleDeleteUnavail = async (slotId: string) => {
+    if (!confirm('Supprimer ce creneau d\'indisponibilite ?')) return;
+    try {
+      await doctorAPI.deleteUnavailableSlot(slotId);
+      setUnavailSlots(prev=>prev.filter(s=>s.id!==slotId));
+    } catch {}
   };
 
   // Create patient then set as selected
@@ -216,6 +278,9 @@ const Calendar: React.FC = () => {
                   {apts.slice(0,2).map(a=>
                     <div key={a.id} style={{height:4,borderRadius:2,background:isSel?'rgba(255,255,255,0.7)':'var(--primary)'}}/>
                   )}
+                  {getUnavailForDay(day).length>0&&
+                    <div style={{height:4,borderRadius:2,background:isSel?'rgba(255,200,200,0.8)':'#fc8181'}}/>
+                  }
                   {apts.length>2&&<div style={{fontSize:9,color:isSel?'rgba(255,255,255,0.8)':'var(--text-muted)',textAlign:'center'}}>+{apts.length-2}</div>}
                 </div>
               </div>
@@ -229,7 +294,9 @@ const Calendar: React.FC = () => {
         <div className="card-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <span className="card-title">{selected?selected.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}):'S\u00e9lectionnez un jour'}</span>
           <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            {selected&&<span className="badge badge-info">{selectedApts.length} RDV</span>}
+            {selected&&<span className="badge badge-info">{selectedApts.length} RDV</span>}{selected&&selectedUnavail.length>0&&<span className="badge" style={{background:"#fff5f5",color:"#c53030",border:"1px solid #fed7d7",fontSize:11,marginLeft:4}}>{selectedUnavail.length} Indisp.</span>}
+            
+            {selected&&<button className="btn btn-outline btn-sm" onClick={openUnavailModal} style={{borderColor:'#fed7d7',color:'#c53030'}}>+ Indisponibilite</button>}
             {selected&&<button className="btn btn-primary btn-sm" onClick={openNewAptModal}>+ Nouveau RDV</button>}
           </div>
         </div>
@@ -241,34 +308,48 @@ const Calendar: React.FC = () => {
                 <div className="empty-icon">📅</div>
                 <p>Aucun rendez-vous</p>
                 <button className="btn btn-primary" style={{marginTop:12}} onClick={openNewAptModal}>+ Planifier un rendez-vous</button>
+                {selectedUnavail.length > 0 && <button className="btn btn-outline" style={{marginTop:8,borderColor:'#fed7d7',color:'#c53030'}} onClick={openUnavailModal}>+ Ajouter une indisponibilite</button>}
               </div>
             :<div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  {selectedApts.map(apt=>(
-                    <div key={apt.id} style={{padding:'12px 14px',border:'1px solid var(--border)',borderLeft:'3px solid var(--primary)',borderRadius:'var(--radius-sm)'}}>
-                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                        <div>
-                          <div style={{fontWeight:500,fontSize:14}}>{apt.patient.user.firstName} {apt.patient.user.lastName}</div>
-                          <div className="text-sm text-muted" style={{marginTop:3}}>
-                            {new Date(apt.startTime).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} · {typeLabels[apt.type]||apt.type}
+                  {[...selectedApts,...selectedUnavail].sort((a:any,b:any)=>new Date(a.startTime).getTime()-new Date(b.startTime).getTime()).map(item=>(
+                    item.patient
+                    ? <div key={item.id} style={{padding:'12px 14px',border:'1px solid var(--border)',borderLeft:'3px solid var(--primary)',borderRadius:'var(--radius-sm)'}}>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                          <div>
+                            <div style={{fontWeight:500,fontSize:14}}>{item.patient.user.firstName} {item.patient.user.lastName}</div>
+                            <div className="text-sm text-muted" style={{marginTop:3}}>
+                              {new Date(item.startTime).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} · {typeLabels[item.type]||item.type}
+                            </div>
+                            {item.reason&&<div className="text-sm" style={{marginTop:4,color:'var(--text-secondary)'}}>Motif : {item.reason}</div>}
                           </div>
-                          {apt.reason&&<div className="text-sm" style={{marginTop:4,color:'var(--text-secondary)'}}>Motif : {apt.reason}</div>}
+                          <span className={`badge ${item.status==='CONFIRMED'?'badge-success':item.status==='CANCELLED'?'badge-danger':item.status==='COMPLETED'?'badge-muted':'badge-info'}`}
+                            style={{fontSize:10,whiteSpace:'nowrap'}}>
+                            {item.status==='SCHEDULED'?'Planifi\u00e9':item.status==='CONFIRMED'?'Confirm\u00e9':item.status==='CANCELLED'?'Annul\u00e9':item.status==='COMPLETED'?'Effectu\u00e9':'Non pr\u00e9sent'}
+                          </span>
                         </div>
-                        <span className={`badge ${apt.status==='CONFIRMED'?'badge-success':apt.status==='CANCELLED'?'badge-danger':apt.status==='COMPLETED'?'badge-muted':'badge-info'}`}
-                          style={{fontSize:10,whiteSpace:'nowrap'}}>
-                          {apt.status==='SCHEDULED'?'Planifi\u00e9':apt.status==='CONFIRMED'?'Confirm\u00e9':apt.status==='CANCELLED'?'Annul\u00e9':apt.status==='COMPLETED'?'Effectu\u00e9':'Non pr\u00e9sent'}
-                        </span>
+                        {getStatusButtons(item.status, item.id).length > 0 && (
+                          <div style={{display:'flex',gap:6,marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
+                            {getStatusButtons(item.status, item.id).map((btn: any, i: number) => (
+                              <button key={i} className={btn.className} onClick={btn.action} style={{fontSize:11}}>
+                                {btn.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      {getStatusButtons(apt.status, apt.id).length > 0 && (
-                        <div style={{display:'flex',gap:6,marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
-                          {getStatusButtons(apt.status, apt.id).map((btn, i) => (
-                            <button key={i} className={btn.className} onClick={btn.action} style={{fontSize:11}}>
-                              {btn.label}
-                            </button>
-                          ))}
+                    : <div key={item.id} style={{padding:'12px 14px',border:'1px solid #fed7d7',borderLeft:'3px solid #c53030',borderRadius:'var(--radius-sm)',backgroundColor:'#fff5f5'}}>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                          <div>
+                            <div style={{fontWeight:500,fontSize:14,color:'#c53030'}}>Indisponible</div>
+                            <div className="text-sm" style={{marginTop:3,color:'#c53030'}}>
+                              {new Date(item.startTime).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} - {new Date(item.endTime).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+                            </div>
+                            {item.reason&&<div className="text-sm" style={{marginTop:4,color:'var(--text-secondary)'}}>Motif : {item.reason}</div>}
+                          </div>
+                          <button className="btn btn-outline btn-sm" onClick={()=>handleDeleteUnavail(item.id)} style={{borderColor:'#fc8181',color:'#c53030',fontSize:11}}>Supprimer</button>
                         </div>
-                      )}
-                    </div>
+                      </div>
                   ))}
                 </div>
                 <button className="btn btn-primary" style={{marginTop:16,width:'100%'}} onClick={openNewAptModal}>+ Ajouter un rendez-vous</button>
@@ -422,6 +503,43 @@ const Calendar: React.FC = () => {
               <button className="btn btn-outline" onClick={()=>!loading&&setShowModal(false)}>Annuler</button>
               <button className="btn btn-primary" onClick={handleCreateAppointment} disabled={loading}>
                 {loading?'Enregistrement...':'Enregistrer le rendez-vous'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ===== MODAL INDISPONIBILITE ===== */}
+      {showUnavailModal && (
+        <div className="modal-overlay" onClick={()=>!unavailSubmitting&&setShowUnavailModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+            <div className="modal-header">
+              <h3>Creneau indisponible</h3>
+              <button className="btn-close" onClick={()=>!unavailSubmitting&&setShowUnavailModal(false)}>x</button>
+            </div>
+            <div className="modal-body">
+              {unavailError && <div className="alert alert-error" style={{marginBottom:16}}>{unavailError}</div>}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
+                <div>
+                  <label className="form-label">Debut *</label>
+                  <input className="form-control" type="datetime-local" value={unavailForm.startTime}
+                    onChange={e=>setUnavailForm({...unavailForm,startTime:e.target.value})} />
+                </div>
+                <div>
+                  <label className="form-label">Fin *</label>
+                  <input className="form-control" type="datetime-local" value={unavailForm.endTime}
+                    onChange={e=>setUnavailForm({...unavailForm,endTime:e.target.value})} />
+                </div>
+              </div>
+              <div style={{marginBottom:16}}>
+                <label className="form-label">Motif (optionnel)</label>
+                <input className="form-control" type="text" placeholder="Ex: Conge, formation..."
+                  value={unavailForm.reason} onChange={e=>setUnavailForm({...unavailForm,reason:e.target.value})} />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={()=>!unavailSubmitting&&setShowUnavailModal(false)}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleCreateUnavail} disabled={unavailSubmitting} style={{backgroundColor:'#c53030'}}>
+                {unavailSubmitting?'Ajout...':'Ajouter'}
               </button>
             </div>
           </div>

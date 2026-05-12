@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AppointmentStatus, ConsultationType } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../prisma';
+import { checkSlotAvailability } from './unavailableSlotController';
 
 // ── Schemas de validation ──────────────────────────────────────────
 
@@ -28,6 +29,10 @@ const ALLOWED_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   [AppointmentStatus.CANCELLED]:  [],
   [AppointmentStatus.COMPLETED]:  [],
   [AppointmentStatus.NO_SHOW]:    [],
+  [AppointmentStatus.PENDING]:      [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED, AppointmentStatus.CANCELLED],
+  [AppointmentStatus.ARRIVED]:     [AppointmentStatus.IN_PROGRESS, AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
+  [AppointmentStatus.IN_PROGRESS]: [AppointmentStatus.COMPLETED, AppointmentStatus.POSTPONED, AppointmentStatus.CANCELLED],
+  [AppointmentStatus.POSTPONED]:   [AppointmentStatus.SCHEDULED, AppointmentStatus.CANCELLED],
 };
 
 // ── Contrôleurs ────────────────────────────────────────────────────
@@ -74,6 +79,12 @@ export const createAppointment = async (req: Request, res: Response) => {
         success: false,
         error: 'Un rendez-vous existe déjà sur ce créneau horaire pour ce médecin',
       });
+    }
+
+    // Vérifier la disponibilité du créneau
+    const isAvailable = await checkSlotAvailability(data.doctorId, new Date(data.startTime), new Date(data.endTime));
+    if (!isAvailable) {
+      return res.status(409).json({ success: false, message: 'Ce créneau est indisponible. Veuillez choisir un autre horaire.' });
     }
 
     const appointment = await prisma.appointment.create({

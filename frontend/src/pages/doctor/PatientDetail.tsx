@@ -969,7 +969,7 @@ const getCertFields = (t: string) => {
                     <div style={{ fontWeight: 500, fontSize: 14 }}>{doc.name}</div>
                     <div className="text-muted text-sm">{doc.type} · {doc.size ? formatFileSize(doc.size) : '—'}</div>
                   </div>
-                  <a href={`${API_BASE}${doc.url}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">Voir</a>
+                  <a href={`${API_BASE.replace('/api','')}${doc.url}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">Voir</a>
                   <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#f5c6c3' }} onClick={() => deleteDoc(doc.id)}>Supprimer</button>
                 </div>
               ))}

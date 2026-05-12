@@ -24,8 +24,11 @@ api.interceptors.response.use(
 export const authAPI = {
   loginDoctor: (email: string, password: string) => api.post('/auth/login', { email, password }),
   loginPatient: (email: string, password: string) => api.post('/auth/patient/login', { email, password }),
+  loginSecretary: (email: string, password: string) => api.post('/auth/secretary/login', { email, password }),
+  updateSecretaryProfile: (data: any) => api.put('/auth/secretary/profile', data),
   getMe: () => api.get('/auth/me'),
 };
+
 
 export const doctorAPI = {
   getDashboard: () => api.get('/doctor/dashboard'),
@@ -62,7 +65,11 @@ export const doctorAPI = {
   listSecretaries: () => api.get('/doctor/secretaries'),
   createSecretary: (data: Record<string, unknown>) => api.post('/doctor/secretaries', data),
   resetSecretaryPassword: (id: string, password: string) => api.post(`/doctor/secretaries/${id}/reset-password`, { password }),
+  updateSecretary: (id: string, data: Record<string, unknown>) => api.put(`/doctor/secretaries/${id}`, data),
   toggleSecretaryStatus: (id: string) => api.patch(`/doctor/secretaries/${id}/toggle-status`),
+  getUnavailableSlots: (params?: Record<string, unknown>) => api.get('/doctor/unavailable-slots', { params }),
+  createUnavailableSlot: (data: Record<string, unknown>) => api.post('/doctor/unavailable-slots', data),
+  deleteUnavailableSlot: (id: string) => api.delete(`/doctor/unavailable-slots/${id}`),
   uploadLogo: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -78,3 +85,20 @@ export const patientAPI = {
 };
 
 export default api;
+
+export const secretaryAPI = {
+  getDashboard: () => api.get('/secretary/dashboard'),
+  getDoctorInfo: () => api.get('/secretary/doctor-info'),
+  changePassword: (data: any) => api.put('/auth/secretary/password', data),
+  getPatients: (params?: any) => api.get('/secretary/patients', { params }),
+  getPatient: (id: string) => api.get('/secretary/patients/' + id),
+  createPatient: (data: any) => api.post('/secretary/patients', data),
+  updatePatient: (id: string, data: any) => api.put('/secretary/patients/' + id, data),
+  getConsultations: () => api.get('/secretary/consultations'),
+  getAppointments: (params?: any) => api.get('/secretary/appointments', { params }),
+  createAppointment: (data: any) => api.post('/secretary/appointments', data),
+  updateAppointment: (id: string, data: any) => api.put('/secretary/appointments/' + id, data),
+  updateAppointmentStatus: (id: string, status: string) => api.patch('/secretary/appointments/' + id + '/status', { status }),
+  deleteAppointment: (id: string) => api.delete('/secretary/appointments/' + id),
+  getUnavailableSlots: (params?: any) => api.get('/secretary/unavailable-slots', { params }),
+};
