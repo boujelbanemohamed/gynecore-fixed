@@ -1,6 +1,7 @@
 pipeline {
     agent any
     environment {
+        PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${env.PATH}"
         DATABASE_URL = credentials('DATABASE_URL')
     }
     stages {
@@ -42,7 +43,7 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                sh 'echo "./restart-services.sh" | at now'
+                sh 'echo "/Users/mohamedboujelbane/Desktop/gynecare-fixed/restart-services.sh" | at now'
             }
         }
     }
