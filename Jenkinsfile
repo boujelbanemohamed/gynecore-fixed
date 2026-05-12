@@ -27,7 +27,7 @@ pipeline {
             steps {
                 dir('backend') {
                     withSonarQubeEnv('SonarQube') {
-                        sh "npx sonar-scanner -Dsonar.login=${env.SONAR_TOKEN} -Dsonar.projectKey=gynecare-backend -Dsonar.sources=src -Dsonar.language=ts -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info 2>/dev/null || true"
+                        sh "npx sonar-scanner -Dsonar.login=${SONAR_AUTH_TOKEN} -Dsonar.projectKey=gynecare-backend -Dsonar.sources=src -Dsonar.language=ts -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info 2>/dev/null || true"
                     }
                 }
             }
@@ -36,7 +36,7 @@ pipeline {
             steps {
                 dir('frontend') {
                     withSonarQubeEnv('SonarQube') {
-                        sh "npx sonar-scanner -Dsonar.login=${env.SONAR_TOKEN} -Dsonar.projectKey=gynecare-frontend -Dsonar.sources=src -Dsonar.language=ts -Dsonar.exclusions=**/node_modules/** 2>/dev/null || true"
+                        sh "npx sonar-scanner -Dsonar.login=${SONAR_AUTH_TOKEN} -Dsonar.projectKey=gynecare-frontend -Dsonar.sources=src -Dsonar.language=ts -Dsonar.exclusions=**/node_modules/** 2>/dev/null || true"
                     }
                 }
             }
