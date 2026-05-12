@@ -10,9 +10,7 @@ pipeline {
 
   stages {
     stage('Checkout') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
 
     stage('Install Backend') {
@@ -50,14 +48,12 @@ pipeline {
               -Dsonar.projectName=GyneCare-Backend \
               -Dsonar.sources=src \
               -Dsonar.language=ts \
-              -Dsonar.typescript.lcov.reportpaths=coverage/lcov.info \
               -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/prisma/**
             cd ../frontend && sonar-scanner \
               -Dsonar.projectKey=gynecare-frontend \
               -Dsonar.projectName=GyneCare-Frontend \
               -Dsonar.sources=src \
               -Dsonar.language=ts \
-              -Dsonar.typescript.lcov.reportpaths=coverage/lcov.info \
               -Dsonar.exclusions=**/node_modules/**,**/build/**
           '''
         }
@@ -79,7 +75,7 @@ pipeline {
       }
     }
 
-    stage('Start Backend') {
+    stage('Deploy') {
       steps {
         dir('backend') {
           sh '''
@@ -90,16 +86,11 @@ pipeline {
             echo "PORT=4000" >> .env
             echo "NODE_ENV=production" >> .env
             echo "CORS_ORIGIN=http://localhost:3000" >> .env
+            nohup npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
           '''
-          sh 'sleep 8 && nohup npx ts-node-dev src/index.ts &'
         }
-      }
-    }
-
-    stage('Start Frontend') {
-      steps {
         dir('frontend') {
-          sh 'sleep 3 && nohup npx serve -s build -l 3000 &'
+          sh 'nohup npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &'
         }
       }
     }
@@ -107,6 +98,8 @@ pipeline {
     stage('Health Check') {
       steps {
         sh '''
+          echo "Waiting 15s for services to start..."
+          sleep 15
           echo "Checking Backend on port 4000..."
           curl -sf http://localhost:4000 || echo "Backend not responding"
           echo "Checking Frontend on port 3000..."
