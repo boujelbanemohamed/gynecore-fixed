@@ -86,11 +86,11 @@ pipeline {
             echo "PORT=4000" >> .env
             echo "NODE_ENV=production" >> .env
             echo "CORS_ORIGIN=http://localhost:3000" >> .env
-            nohup npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
+            setsid npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
           '''
         }
         dir('frontend') {
-          sh 'nohup npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &'
+          sh 'setsid npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &'
         }
       }
     }
@@ -98,8 +98,8 @@ pipeline {
     stage('Health Check') {
       steps {
         sh '''
-          echo "Waiting 15s for services to start..."
-          sleep 15
+          echo "Waiting 20s for services to start..."
+          sleep 20
           echo "Checking Backend on port 4000..."
           curl -sf http://localhost:4000 || echo "Backend not responding"
           echo "Checking Frontend on port 3000..."
