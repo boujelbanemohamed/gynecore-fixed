@@ -1,9 +1,10 @@
 #!/bin/bash
 WORKSPACE="$1"
-DBURL="$2"
 
 lsof -t -i:4000 | xargs kill -9 2>/dev/null || true
 lsof -t -i:3000 | xargs kill -9 2>/dev/null || true
+
+DBURL=$(cat /tmp/gynecare-dburl)
 
 cd "$WORKSPACE/backend"
 cp -f .env .env.backup 2>/dev/null || true
