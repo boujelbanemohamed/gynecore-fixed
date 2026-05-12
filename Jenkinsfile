@@ -61,7 +61,7 @@ pipeline {
     stage('Deploy') {
       steps {
         sh 'echo "$DATABASE_URL_CREDENTIALS" > /tmp/gynecare-dburl'
-        sh 'chmod +x deploy.sh && echo "bash $PWD/deploy.sh $PWD" | at now'
+        sh 'chmod +x deploy.sh && bash deploy.sh $PWD'
       }
     }
   }
