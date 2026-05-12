@@ -64,26 +64,30 @@ pipeline {
           lsof -t -i:4000 | xargs kill -9 2>/dev/null || true
           lsof -t -i:3000 | xargs kill -9 2>/dev/null || true
 
-          cd backend
-          cp -f .env .env.backup 2>/dev/null || true
-          echo "DATABASE_URL=$DATABASE_URL_CREDENTIALS" > .env
-          echo "JWT_SECRET=jenkins-build-secret" >> .env
-          echo "JWT_EXPIRES_IN=24h" >> .env
-          echo "PORT=4000" >> .env
-          echo "NODE_ENV=production" >> .env
-          echo "CORS_ORIGIN=http://localhost:3000" >> .env
-          nohup npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
-          echo "Backend started, waiting..."
+          WORKSPACE="$PWD"
 
-          cd ../frontend
-          nohup npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &
-          echo "Frontend started, waiting..."
+          cat > /tmp/gynecare-deploy.sh << 'SCRIPT'
+#!/bin/bash
+WORKSPACE=$(cat /tmp/gynecare-workspace)
+cd "$WORKSPACE/backend"
+cp -f .env .env.backup 2>/dev/null || true
+DATABASE_URL=$(cat /tmp/gynecare-dburl)
+echo "DATABASE_URL=$DATABASE_URL" > .env
+echo "JWT_SECRET=jenkins-build-secret" >> .env
+echo "JWT_EXPIRES_IN=24h" >> .env
+echo "PORT=4000" >> .env
+echo "NODE_ENV=production" >> .env
+echo "CORS_ORIGIN=http://localhost:3000" >> .env
+nohup npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
+cd "$WORKSPACE/frontend"
+nohup npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &
+SCRIPT
 
-          sleep 25
-          echo "=== Health Check ==="
-          curl -sf http://localhost:4000 && echo "Backend OK" || echo "Backend starting..."
-          curl -sf http://localhost:3000 && echo "Frontend OK" || echo "Frontend starting..."
-          echo "Deployment done!"
+          echo "$WORKSPACE" > /tmp/gynecare-workspace
+          echo "$DATABASE_URL_CREDENTIALS" > /tmp/gynecare-dburl
+          chmod +x /tmp/gynecare-deploy.sh
+          echo "/tmp/gynecare-deploy.sh" | at now
+          echo "Deploy launched via at"
         '''
       }
     }
@@ -91,7 +95,7 @@ pipeline {
 
   post {
     success {
-      echo 'GyneCare pipeline complete!'
+      echo 'GyneCare pipeline complete! Services starting...'
     }
   }
 }
