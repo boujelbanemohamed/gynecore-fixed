@@ -16,6 +16,8 @@ const typeOptions = [
   { value: 'POSTNATAL', label: 'Postnatal' },
 ];
 
+const PER_PAGE = 15;
+
 const SecretaryConsultations = () => {
   const [consultations, setConsultations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,10 @@ const SecretaryConsultations = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(consultations.length / PER_PAGE);
+  const paginatedData = consultations.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   const fetchConsultations = useCallback(async () => {
     setLoading(true);
@@ -36,6 +42,7 @@ const SecretaryConsultations = () => {
       if (endDate) params.endDate = endDate;
       const r = await secretaryAPI.getConsultations(params);
       setConsultations(r.data.data.consultations);
+      setCurrentPage(1);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [search, type, startDate, endDate]);
@@ -47,6 +54,19 @@ const SecretaryConsultations = () => {
 
   const iS: React.CSSProperties = { padding: '7px 12px', borderRadius: 6, border: '1px solid #dee2e6', fontSize: 13, outline: 'none', backgroundColor: '#fff' };
   const bS = (v: 'p' | 's') => ({ padding: '7px 14px', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: v === 'p' ? '1px solid #27ae60' : '1px solid #dee2e6', backgroundColor: v === 'p' ? '#27ae60' : '#fff', color: v === 'p' ? '#fff' : '#495057' });
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) pages.push(i); }
+    else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('...');
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push('...');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   return (
     <div>
@@ -75,7 +95,7 @@ const SecretaryConsultations = () => {
             <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={iS} />
           </div>
           {activeFilterCount > 0 && (
-            <button onClick={resetFilters} style={{ ...bS('s'), color: '#e74c3c', borderColor: '#e74c3c' }}>
+            <button onClick={resetFilters} style={{ ...bS('s'), color: '#e74c3c', borderColor: '#e74c3c', display: 'flex', alignItems: 'center', gap: 4 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               Reinitialiser
             </button>
@@ -85,24 +105,55 @@ const SecretaryConsultations = () => {
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         {loading ? <div className="loading-screen"><div className="spinner"/></div> :
-        !consultations.length ? <div className="empty-state"><p>Aucune consultation{activeFilterCount > 0 ? ' avec ces filtres' : ''}</p></div> : (
-          <table>
-            <thead><tr><th>Date</th><th>Patiente</th><th>Type</th><th>Motif</th><th>Diagnostic</th><th>Traitement</th><th>Details</th></tr></thead>
-            <tbody>{consultations.map((co: any) => {
-              const u = co.patient?.user;
-              return (
-                <tr key={co.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(co.date).toLocaleDateString('fr-FR')}</td>
-                  <td style={{ fontWeight: 500 }}>{u?.firstName} {u?.lastName}</td>
-                  <td><span className="badge badge-info">{typeLabels[co.type] || co.type}</span></td>
-                  <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{co.chiefComplaint || '-'}</td>
-                  <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{co.diagnosis || '-'}</td>
-                  <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{co.treatment || '-'}</td>
-                  <td><button className="btn" onClick={() => setSelected(co)} style={{ padding: '4px 12px', fontSize: 13 }}>Voir</button></td>
-                </tr>
-              );
-            })}</tbody>
-          </table>
+        !consultations.length ? (
+          <div className="empty-state"><p>Aucune consultation{activeFilterCount > 0 ? ' avec ces filtres' : ''}</p></div>
+        ) : (
+          <>
+            <table>
+              <thead><tr><th>Date</th><th>Patiente</th><th>Type</th><th>Motif</th><th>Diagnostic</th><th>Traitement</th><th>Details</th></tr></thead>
+              <tbody>{paginatedData.map((co: any) => {
+                const u = co.patient?.user;
+                return (
+                  <tr key={co.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(co.date).toLocaleDateString('fr-FR')}</td>
+                    <td style={{ fontWeight: 500 }}>{u?.firstName} {u?.lastName}</td>
+                    <td><span className="badge badge-info">{typeLabels[co.type] || co.type}</span></td>
+                    <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{co.chiefComplaint || '-'}</td>
+                    <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{co.diagnosis || '-'}</td>
+                    <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{co.treatment || '-'}</td>
+                    <td><button className="btn" onClick={() => setSelected(co)} style={{ padding: '4px 12px', fontSize: 13 }}>Voir</button></td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #e9ecef', backgroundColor: '#f8f9fa' }}>
+                <span style={{ fontSize: 13, color: '#6c757d' }}>
+                  {(currentPage - 1) * PER_PAGE + 1} - {Math.min(currentPage * PER_PAGE, consultations.length)} sur {consultations.length}
+                </span>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} style={{ ...iS, padding: '5px 8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.4 : 1, fontSize: 12 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+                  </button>
+                  <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} style={{ ...iS, padding: '5px 8px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.4 : 1 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  {getPageNumbers().map((p, i) =>
+                    typeof p === 'string' ? <span key={`d-${i}`} style={{ padding: '5px 6px', fontSize: 12, color: '#6c757d' }}>...</span> : (
+                      <button key={p} onClick={() => setCurrentPage(p)} style={{ ...iS, padding: '5px 10px', cursor: 'pointer', fontWeight: p === currentPage ? 600 : 400, backgroundColor: p === currentPage ? '#27ae60' : '#fff', color: p === currentPage ? '#fff' : '#495057', borderColor: p === currentPage ? '#27ae60' : '#dee2e6' }}>{p}</button>
+                    )
+                  )}
+                  <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} style={{ ...iS, padding: '5px 8px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.4 : 1 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                  <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} style={{ ...iS, padding: '5px 8px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.4 : 1, fontSize: 12 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
