@@ -4,7 +4,7 @@ import { doctorAPI } from '../../services/api';
 import ClinicalExamTab from './ClinicalExamTab';
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
-type Tab = 'info'|'consultations'|'prescriptions'|'certificates'|'letters'|'appointments'|'documents';
+type Tab = 'info'|'consultations'|'exams'|'prescriptions'|'certificates'|'letters'|'appointments'|'documents';
 type ConsultTab = 'accueil'|'examen'|'bilan'|'contexte';
 type ClinicalCtx = 'obstetrique'|'infertilite'|null;
 
