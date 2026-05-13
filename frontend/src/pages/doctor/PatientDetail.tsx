@@ -58,6 +58,7 @@ const PatientDetail: React.FC = () => {
   const [clinicalCtx, setClinicalCtx] = useState<ClinicalCtx>(null);
   const [form, setForm] = useState(emptyForm);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [examCount, setExamCount] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -134,6 +135,12 @@ const PatientDetail: React.FC = () => {
     if (!id) return;
     doctorAPI.getPatientDocuments(id).then(r => setDocuments(r.data.data || [])).catch(() => {});
   };
+
+  useEffect(() => {
+    (doctorAPI as any).getClinicalExams({ patientId: id }).then((r: any) => {
+      if (r?.data?.data) setExamCount(r.data.data.length);
+    }).catch(() => {});
+  }, [id]);
 
   const uploadFile = async (file: File) => {
     if (!id) return; setUploading(true);
@@ -847,7 +854,7 @@ const getCertFields = (t: string) => {
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: 'info', label: 'Informations' },
     { key: 'consultations', label: 'Consultations', count: patient.consultations?.length },
-    { key: 'exams', label: 'Examens cliniques' },
+    { key: 'exams', label: 'Examens cliniques', count: examCount },
     { key: 'prescriptions', label: 'Ordonnances', count: patient.prescriptions?.length },
     { key: 'certificates', label: 'Certificats', count: certificates?.length },
   { key: 'letters', label: 'Courriers medicaux', count: letters?.length },
@@ -946,7 +953,7 @@ const getCertFields = (t: string) => {
       )}
 
       {/* ── TAB: Examens cliniques ── */}
-      {tab === 'exams' && <ClinicalExamTab patientId={id!} patientName={`${u.firstName} ${u.lastName}`} />}
+      {tab === 'exams' && <ClinicalExamTab patientId={id!} patientName={`${u.firstName} ${u.lastName}`} doctorProfile={doctorProfile} API_BASE={API_BASE} />}
 
       {/* ── TAB: Ordonnances ── }}
       {tab === 'prescriptions' && (

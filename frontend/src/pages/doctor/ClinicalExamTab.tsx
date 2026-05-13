@@ -11,14 +11,66 @@ const emptyForm = () => ({
   cervixAspect: 'Aspect normal', vaginalDischarge: 'Leucorrhees physiologiques',
   dilatation: 'Col ferme', effacement: 'Non efface', consistency: 'Ferme', presentationHeight: '-3 (mobile)',
   breastExam: 'Seins symetriques', clinicalConclusion: '', notes: '',
+  generalStateOther: '',
+  conjonctivesOther: '',
+  oedemesOther: '',
+  cardiacOther: '',
+  pulmonaryOther: '',
+  abdomenOther: '',
+  uterusOther: '',
+  presentationOther: '',
+  bcfOther: '',
+  adnexaOther: '',
+  cervixOther: '',
+  vaginalOther: '',
+  dilatationOther: '',
+  effacementOther: '',
+  consistencyOther: '',
+  heightOther: '',
+  breastOther: '',
 });
 
-const ClinicalExamTab: React.FC<{ patientId: string; patientName: string }> = ({ patientId, patientName }) => {
+
+const OptionSelector: React.FC<{
+  label: string; value: string; onChange: (v: string) => void;
+  options: string[]; otherKey: string; otherValue: string; onOtherChange: (v: string) => void;
+}> = ({ label, value, onChange, options, otherKey, otherValue, onOtherChange }) => {
+  const isOther = value === 'Autre' || !options.includes(value);
+  return (
+    <div style={{ gridColumn: 'span 3' }}>
+      <label className="form-label" style={{ marginBottom: 6, display: 'block' }}>{label}</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {options.map(opt => (
+          <button key={opt} type="button" onClick={() => onChange(opt)}
+            style={{
+              padding: '5px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+              border: value === opt ? '2px solid #1a5c4a' : '1px solid #ddd',
+              background: value === opt ? '#1a5c4a' : '#fff',
+              color: value === opt ? '#fff' : '#333', fontWeight: value === opt ? 600 : 400,
+            }}>{opt}</button>
+        ))}
+        <button type="button" onClick={() => onChange('Autre')}
+          style={{
+            padding: '5px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+            border: isOther ? '2px solid #1a5c4a' : '1px solid #ddd',
+            background: isOther ? '#1a5c4a' : '#fff',
+            color: isOther ? '#fff' : '#333', fontWeight: isOther ? 600 : 400,
+          }}>Autre</button>
+      </div>
+      {isOther && (
+        <input className="form-control" style={{ marginTop: 6, fontSize: 12 }}
+          placeholder="Precisez..." value={otherValue} onChange={e => onOtherChange(e.target.value)} />
+      )}
+    </div>
+  );
+};
+
+const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctorProfile?: any; API_BASE?: string }> = ({ patientId, patientName, doctorProfile, API_BASE }) => {
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(emptyForm());
+  const [form, setForm] = useState<any>(emptyForm());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -29,7 +81,8 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string }> = ({
   useEffect(() => { load(); }, [patientId]);
 
   const openModal = () => { setForm(emptyForm()); setShowModal(true); };
-  const upd = (p: any) => setForm(prev => ({ ...prev, ...p }));
+  const handleEdit = (ex: any) => { setForm({ ...emptyForm(), ...ex }); setShowModal(true); };
+  const upd = (p: any) => setForm((prev: any) => ({ ...prev, ...p }));
 
   const imc = (() => {
     const w = parseFloat(form.weight); const h = parseFloat(form.height) / 100;
@@ -48,6 +101,104 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string }> = ({
   const handleDelete = async (id: string) => {
     try { await (doctorAPI as any).deleteClinicalExam(id); load(); setConfirmDelete(null); }
     catch { alert('Erreur'); }
+  };
+
+
+  const PRINT_CSS = `
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 210mm; height: auto; overflow: hidden; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #1a1a2e; padding: 12mm 15mm; background: white; }
+    @media print { html, body { width: 100%; height: auto; overflow: hidden; } body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+    .rx-header { display: flex; align-items: flex-start; gap: 16px; padding-bottom: 12px; border-bottom: 3px solid #1a5c4a; margin-bottom: 12px; }
+    .rx-info { flex: 1; }
+    .rx-info h2 { font-size: 16px; font-weight: 700; color: #1a5c4a; margin: 0; }
+    .rx-clinic-name { font-size: 11px; color: #1a5c4a; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 1px; }
+    .rx-specialty { font-size: 12px; color: #333; margin: 1px 0; }
+    .rx-services { font-size: 11px; color: #888; font-style: italic; margin: 1px 0; }
+    .rx-contact { font-size: 11px; color: #777; margin-top: 2px; }
+    .rx-title { text-align: center; font-size: 18px; font-weight: 700; color: #1a5c4a; text-transform: uppercase; letter-spacing: 2px; margin: 14px 0 12px 0; padding: 8px 0; border: 2px solid #1a5c4a; border-radius: 6px; background: #f0faf6; }
+    .rx-patient { display: flex; justify-content: space-between; padding: 10px 14px; background: #f8f9fa; border-radius: 6px; margin-bottom: 14px; font-size: 13px; }
+    .rx-patient strong { color: #1a5c4a; }
+    .rx-date-place { margin-bottom: 12px; font-size: 12px; color: #555; }
+    .exam-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    .exam-table thead th { background: #1a5c4a; color: white; padding: 7px 10px; font-size: 11px; text-transform: uppercase; text-align: left; }
+    .exam-table thead th:first-child { border-radius: 6px 0 0 0; }
+    .exam-table thead th:last-child { border-radius: 0 6px 0 0; }
+    .exam-table tbody td { padding: 6px 10px; font-size: 12px; border-bottom: 1px solid #e8eaed; }
+    .exam-table tbody tr:nth-child(even) { background: #f8faf9; }
+    .exam-section { margin: 10px 0; }
+    .exam-section-title { font-size: 13px; font-weight: 700; color: #1a5c4a; margin: 10px 0 4px; padding: 4px 10px; background: #f0faf6; border-radius: 4px; border-left: 3px solid #1a5c4a; }
+    .rx-footer { margin-top: 24px; padding-top: 12px; border-top: 3px solid #1a5c4a; }
+    .rx-sig-line { width: 200px; border-top: 1px solid #999; margin: 50px auto 0; padding-top: 6px; font-size: 11px; color: #555; text-align: center; }
+  `;
+
+  const printInIframe = (htmlContent: string) => {
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;border:none;opacity:0;pointer-events:none;z-index:-1;';
+      document.body.appendChild(iframe);
+      const doc = iframe.contentDocument || (iframe.contentWindow as any)?.document;
+      if (!doc) { document.body.removeChild(iframe); return; }
+      doc.open();
+      doc.write('<!DOCTYPE html><html><head><style>' + PRINT_CSS + '</style></head><body style="background:white;">' + htmlContent + '</body></html>');
+      doc.close();
+      setTimeout(() => { try { (iframe.contentWindow as any)?.focus(); (iframe.contentWindow as any)?.print(); } catch(e) {} }, 800);
+      const cleanup = () => { try { document.body.removeChild(iframe); } catch {} window.removeEventListener('afterprint', cleanup); };
+      window.addEventListener('afterprint', cleanup);
+      setTimeout(cleanup, 60000);
+    } catch(e) {}
+  };
+
+  const handlePrint = async (ex: any) => {
+    try {
+      const dp = doctorProfile || {};
+      const logoUrl = dp.logo && API_BASE ? (API_BASE.replace('/api','') + dp.logo) : '';
+      let logoHtml = '';
+      if (logoUrl) {
+        try {
+          const imgRes = await fetch(logoUrl);
+          const blob = await imgRes.blob();
+          logoHtml = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve('<img style="width:64px;height:64px;border-radius:50%;object-fit:contain;border:2px solid #1a5c4a;" src="' + reader.result + '" />');
+            reader.readAsDataURL(blob);
+          });
+        } catch { logoHtml = ''; }
+      }
+      const calcImc = ex.weight && ex.height ? (ex.weight / ((ex.height / 100) ** 2)).toFixed(1) : null;
+      const d = ex.date ? new Date(ex.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+      const dt = ex.date ? new Date(ex.date) : new Date();
+
+      const sec = (title: string, rows: string) => {
+        if (!rows) return '';
+        return '<div class="exam-section"><div class="exam-section-title">' + title + '</div><table class="exam-table"><tbody>' + rows + '</tbody></table></div>';
+      };
+      const row = (label: string, val: any) => val ? '<tr><td style="font-weight:600;color:#1a5c4a;width:45%;padding:5px 10px;">' + label + '</td><td style="padding:5px 10px;">' + val + '</td></tr>' : '';
+
+      const html = '<div>' +
+        '<div class="rx-header">' + logoHtml +
+        '<div class="rx-info">' +
+        '<div class="rx-clinic-name">' + (dp.clinicName||'') + '</div>' +
+        '<h2>Dr ' + (dp.lastName||'') + ' ' + (dp.firstName||'') + '</h2>' +
+        '<div class="rx-specialty">' + (dp.specialization||'Gynecologie-Obstetrique') + '</div>' +
+        '<div class="rx-services">' + (dp.services||'') + '</div>' +
+        '<div class="rx-contact">' + (dp.phone||'') + (dp.email?' | ':'') + (dp.email||'') + '</div>' +
+        '</div></div>' +
+        '<div class="rx-title">Examen Clinique</div>' +
+        '<div class="rx-patient"><div><strong>Patiente :</strong> ' + patientName + '</div><div><strong>Date :</strong> ' + d + '</div></div>' +
+        '<div class="rx-date-place">Fait a ' + (dp.city||'') + ', le ' + d + '</div>' +
+        sec('Constantes', row('Poids', ex.weight ? ex.weight+' kg' : '') + row('Taille', ex.height ? ex.height+' cm' : '') + row('IMC', calcImc ? calcImc+' kg/m2' : '') + row('TA', ex.bloodPressure) + row('Pouls', ex.heartRate ? ex.heartRate+' bpm' : '') + row('Temperature', ex.temperature ? ex.temperature+' C' : '')) +
+        sec('Examen general', row('Etat general', ex.generalState) + row('Conjonctives', ex.conjonctives) + row('Oedemes', ex.oedemes)) +
+        sec('Cardio-respiratoire', row('Auscultation cardiaque', ex.cardiacAuscultation) + row('Auscultation pulmonaire', ex.pulmonaryAuscultation)) +
+        sec('Abdomino-pelvien', row('Abdomen', ex.abdomen) + row('Uterus', ex.uterusState) + row('Hauteur uterine', ex.uterineHeight ? ex.uterineHeight+' cm' : '') + row('Presentation', ex.presentation) + row('BCF', ex.bcf) + row('Annexes', ex.adnexa)) +
+        sec('Examen au speculum / Toucher vaginal', row('Col uterin', ex.cervixAspect) + row('Vagin / Pertes', ex.vaginalDischarge) + row('Dilatation', ex.dilatation) + row('Effacement', ex.effacement) + row('Consistance', ex.consistency) + row('Hauteur presentation', ex.presentationHeight)) +
+        sec('Examen des seins', row('Inspection / Palpation', ex.breastExam)) +
+        (ex.clinicalConclusion ? '<div style="margin:10px 0;padding:10px 14px;background:#fef9ef;border-left:4px solid #e67e22;border-radius:0 6px 6px 0;font-size:12px;"><strong>Conclusion :</strong> ' + ex.clinicalConclusion + '</div>' : '') +
+        (ex.notes ? '<div style="margin:8px 0;font-size:11px;color:#666;"><em>Notes : ' + ex.notes + '</em></div>' : '') +
+        '<div class="rx-footer"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>';
+      printInIframe(html);
+    } catch(e) { console.error('Print error:', e); }
   };
 
   const section = (title: string, icon: string, rows: [string, string][]) => (
@@ -88,12 +239,14 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string }> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 18 }}>🩺</span>
                     <div>
-                      <span style={{ fontWeight: 500 }}>{new Date(ex.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                      <span style={{ fontWeight: 500 }}>{new Date(ex.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                       {ex.generalState && <span className="badge badge-success" style={{ marginLeft: 8 }}>{ex.generalState}</span>}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <button className="btn btn-outline btn-sm" style={{ color: '#e74c3c', borderColor: '#f5c6c3' }} onClick={e => { e.stopPropagation(); setConfirmDelete(ex.id); }}>Supprimer</button>
+                    <button className="btn btn-outline btn-sm" onClick={e => { e.stopPropagation(); handleEdit(ex); }}>Modifier</button>
+                      <button className="btn btn-outline btn-sm" onClick={e => { e.stopPropagation(); handlePrint(ex); }}>Imprimer</button>
+                      <button className="btn btn-outline btn-sm" style={{ color: '#e74c3c', borderColor: '#f5c6c3' }} onClick={e => { e.stopPropagation(); setConfirmDelete(ex.id); }}>Supprimer</button>
                     <span style={{ fontSize: 12, color: '#999' }}>{isExpanded ? '▲' : '▼'}</span>
                   </div>
                 </div>
@@ -174,45 +327,81 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string }> = ({
               {/* Examen general */}
               <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>🩺 Examen general</div>
               <div className="form-grid-3">
-                <div className="form-group"><label className="form-label">Etat general</label><input className="form-control" value={form.generalState} onChange={e => upd({ generalState: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Conjonctives</label><input className="form-control" value={form.conjonctives} onChange={e => upd({ conjonctives: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Oedemes</label><input className="form-control" value={form.oedemes} onChange={e => upd({ oedemes: e.target.value })} /></div>
+                <OptionSelector label="Etat general" value={form.generalState} onChange={v => upd({ generalState: v })}
+                  options={['Bon etat general', 'Altere', 'Astenie', 'Paleur cutaneo-muqueuse', 'Ictere', 'Fievre']}
+                  otherKey="generalStateOther" otherValue={form.generalStateOther || ''} onOtherChange={v => upd({ generalStateOther: v })} />
+                <OptionSelector label="Conjonctives" value={form.conjonctives} onChange={v => upd({ conjonctives: v })}
+                  options={['Rosees', 'Pales', 'Icteriques']}
+                  otherKey="conjonctivesOther" otherValue={form.conjonctivesOther || ''} onOtherChange={v => upd({ conjonctivesOther: v })} />
+                <OptionSelector label="Oedemes" value={form.oedemes} onChange={v => upd({ oedemes: v })}
+                  options={['Absents', 'Membres inf.', 'Generalises', 'Prenant le godet']}
+                  otherKey="oedemesOther" otherValue={form.oedemesOther || ''} onOtherChange={v => upd({ oedemesOther: v })} />
               </div>
 
               {/* Cardio-respiratoire */}
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>❤️ Examen cardio-respiratoire</div>
-              <div className="form-grid-2">
-                <div className="form-group"><label className="form-label">Auscultation cardiaque</label><input className="form-control" value={form.cardiacAuscultation} onChange={e => upd({ cardiacAuscultation: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Auscultation pulmonaire</label><input className="form-control" value={form.pulmonaryAuscultation} onChange={e => upd({ pulmonaryAuscultation: e.target.value })} /></div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>heart Examen cardio-respiratoire</div>
+              <div className="form-grid-3">
+                <OptionSelector label="Auscultation cardiaque" value={form.cardiacAuscultation} onChange={v => upd({ cardiacAuscultation: v })}
+                  options={['Rythme', 'Regulier', 'Souffle systolique', 'Arythmie', 'Tachycardie', 'Bradycardie']}
+                  otherKey="cardiacOther" otherValue={form.cardiacOther || ''} onOtherChange={v => upd({ cardiacOther: v })} />
+                <OptionSelector label="Auscultation pulmonaire" value={form.pulmonaryAuscultation} onChange={v => upd({ pulmonaryAuscultation: v })}
+                  options={['Murmure vesiculaire normal', 'Rates crepitants', 'Sibilants', 'Silence aerique']}
+                  otherKey="pulmonaryOther" otherValue={form.pulmonaryOther || ''} onOtherChange={v => upd({ pulmonaryOther: v })} />
               </div>
 
               {/* Abdomino-pelvien */}
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>🫁 Examen abdomino-pelvien</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>baby Examen abdomino-pelvien</div>
               <div className="form-grid-3">
-                <div className="form-group"><label className="form-label">Abdomen</label><input className="form-control" value={form.abdomen} onChange={e => upd({ abdomen: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Etat uterin</label><input className="form-control" value={form.uterusState} onChange={e => upd({ uterusState: e.target.value })} /></div>
+                <OptionSelector label="Abdomen" value={form.abdomen} onChange={v => upd({ abdomen: v })}
+                  options={['Souple', 'Sensible', 'Douloureux', 'Defense', 'Contracture', 'Masse palpable', 'Cicatrice Pfannenstiel']}
+                  otherKey="abdomenOther" otherValue={form.abdomenOther || ''} onOtherChange={v => upd({ abdomenOther: v })} />
+                <OptionSelector label="Uterus" value={form.uterusState} onChange={v => upd({ uterusState: v })}
+                  options={['Gravide', 'Non gravide', 'Augmente de volume', 'Regulier', 'Irregulier (fibromes)', 'Douloureux a la mobilisation']}
+                  otherKey="uterusOther" otherValue={form.uterusOther || ''} onOtherChange={v => upd({ uterusOther: v })} />
                 <div className="form-group"><label className="form-label">Hauteur uterine (cm)</label><input className="form-control" type="number" step="0.1" value={form.uterineHeight} onChange={e => upd({ uterineHeight: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Presentation</label><input className="form-control" value={form.presentation} onChange={e => upd({ presentation: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">BCF</label><input className="form-control" value={form.bcf} onChange={e => upd({ bcf: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Annexes</label><input className="form-control" value={form.adnexa} onChange={e => upd({ adnexa: e.target.value })} /></div>
+                <OptionSelector label="Presentation" value={form.presentation} onChange={v => upd({ presentation: v })}
+                  options={['Cephalique', 'Siege', 'Transverse', 'Non precisee']}
+                  otherKey="presentationOther" otherValue={form.presentationOther || ''} onOtherChange={v => upd({ presentationOther: v })} />
+                <OptionSelector label="BCF" value={form.bcf} onChange={v => upd({ bcf: v })}
+                  options={['Positif', 'Negatif']}
+                  otherKey="bcfOther" otherValue={form.bcfOther || ''} onOtherChange={v => upd({ bcfOther: v })} />
+                <OptionSelector label="Annexes" value={form.adnexa} onChange={v => upd({ adnexa: v })}
+                  options={['Libres et indolores', 'Masse latero-uterine droite', 'Masse latero-uterine gauche', 'Douleur a la palpation']}
+                  otherKey="adnexaOther" otherValue={form.adnexaOther || ''} onOtherChange={v => upd({ adnexaOther: v })} />
               </div>
 
-              {/* Examen au speculum */}
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>🔬 Examen au speculum / Toucher vaginal</div>
+
+              {/* Examen au speculum / Toucher vaginal */}
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>Examen au speculum / Toucher vaginal</div>
               <div className="form-grid-3">
-                <div className="form-group"><label className="form-label">Col uterin</label><input className="form-control" value={form.cervixAspect} onChange={e => upd({ cervixAspect: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Vagin / Pertes</label><input className="form-control" value={form.vaginalDischarge} onChange={e => upd({ vaginalDischarge: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Dilatation</label><input className="form-control" value={form.dilatation} onChange={e => upd({ dilatation: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Effacement</label><input className="form-control" value={form.effacement} onChange={e => upd({ effacement: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Consistance</label><input className="form-control" value={form.consistency} onChange={e => upd({ consistency: e.target.value })} /></div>
-                <div className="form-group"><label className="form-label">Hauteur presentation</label><input className="form-control" value={form.presentationHeight} onChange={e => upd({ presentationHeight: e.target.value })} /></div>
+                <OptionSelector label="Col uterin" value={form.cervixAspect} onChange={v => upd({ cervixAspect: v })}
+                  options={['Aspect normal', 'Ectropion', 'Polype cervical', 'Lesion suspecte', 'Beant', 'Ferme', 'Saignement au contact']}
+                  otherKey="cervixOther" otherValue={form.cervixOther || ''} onOtherChange={v => upd({ cervixOther: v })} />
+                <OptionSelector label="Vagin / Pertes" value={form.vaginalDischarge} onChange={v => upd({ vaginalDischarge: v })}
+                  options={['Leucorrhees physiologiques', 'Leucorrhees abondantes', 'Leucorrhees purulentes', 'Metrorragies actives', 'Liquide amniotique', 'Pas de pertes']}
+                  otherKey="vaginalOther" otherValue={form.vaginalOther || ''} onOtherChange={v => upd({ vaginalOther: v })} />
+                <OptionSelector label="Dilatation" value={form.dilatation} onChange={v => upd({ dilatation: v })}
+                  options={['Col ferme', '1 cm', '2 cm', '3 cm', '4 cm', '5 cm', '6 cm', '7 cm', '8 cm', '9 cm', 'Complete (10 cm)']}
+                  otherKey="dilatationOther" otherValue={form.dilatationOther || ''} onOtherChange={v => upd({ dilatationOther: v })} />
+                <OptionSelector label="Effacement" value={form.effacement} onChange={v => upd({ effacement: v })}
+                  options={['Non efface', '25%', '50%', '75%', 'Efface']}
+                  otherKey="effacementOther" otherValue={form.effacementOther || ''} onOtherChange={v => upd({ effacementOther: v })} />
+                <OptionSelector label="Consistance" value={form.consistency} onChange={v => upd({ consistency: v })}
+                  options={['Ferme', 'Moyenne', 'Molle']}
+                  otherKey="consistencyOther" otherValue={form.consistencyOther || ''} onOtherChange={v => upd({ consistencyOther: v })} />
+                <OptionSelector label="Hauteur presentation" value={form.presentationHeight} onChange={v => upd({ presentationHeight: v })}
+                  options={['-3 (mobile)', '-2', '-1', '0', '+1', '+2']}
+                  otherKey="heightOther" otherValue={form.heightOther || ''} onOtherChange={v => upd({ heightOther: v })} />
               </div>
 
               {/* Seins */}
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>🤱 Examen des seins</div>
-              <div className="form-grid-2">
-                <div className="form-group"><label className="form-label">Inspection / Palpation</label><input className="form-control" value={form.breastExam} onChange={e => upd({ breastExam: e.target.value })} /></div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>Examen des seins</div>
+              <div className="form-grid-3">
+                <OptionSelector label="Inspection / Palpation" value={form.breastExam} onChange={v => upd({ breastExam: v })}
+                  options={['Seins symetriques', 'Seins asymetriques', 'Nodules', 'Galactorrhee']}
+                  otherKey="breastOther" otherValue={form.breastOther || ''} onOtherChange={v => upd({ breastOther: v })} />
               </div>
+
 
               {/* Conclusion */}
               <div style={{ fontSize: 13, fontWeight: 600, color: '#1a5c4a', margin: '16px 0 8px' }}>📝 Conclusion</div>

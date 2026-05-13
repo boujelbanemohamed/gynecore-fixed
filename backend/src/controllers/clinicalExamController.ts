@@ -4,12 +4,15 @@ import { prisma } from '../prisma';
 export const getClinicalExams = async (req: Request, res: Response) => {
   try {
     const doctorId = req.user!.userId;
+    const { patientId } = req.query;
+    const where: any = { patient: { doctorId } };
+    if (patientId) where.patientId = patientId as string;
     const exams = await prisma.clinicalExam.findMany({
-      where: { patient: { doctorId } },
+      where,
       include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
       orderBy: { date: 'desc' },
     });
-    return res.json({ success: true, data: { exams } });
+    return res.json({ success: true, data: exams });
   } catch (err) {
     console.error('[getClinicalExams]', err);
     return res.status(500).json({ success: false, error: 'Erreur serveur' });
