@@ -110,6 +110,7 @@ model Patient {
   certificates         Certificate[]
   medicalLetters       MedicalLetter[]
 
+  clinicalExams         ClinicalExam[]
   @@map("patients")
 }
 

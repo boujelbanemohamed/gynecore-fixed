@@ -14,5 +14,5 @@ export CORS_ORIGIN="http://localhost:3000"
 nohup npx ts-node-dev src/index.ts > /tmp/gynecare-backend.log 2>&1 &
 sleep 3
 cd /Users/mohamedboujelbane/Desktop/gynecare-fixed/frontend
-nohup npx serve -s build -l 3000 > /tmp/gynecare-frontend.log 2>&1 &
+nohup npx serve -s build --single -l 3000 > /tmp/gynecare-frontend.log 2>&1 &
 echo "OK" > /tmp/gynecare-deploy-status.txt
