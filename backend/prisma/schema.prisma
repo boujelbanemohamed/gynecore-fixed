@@ -253,3 +253,39 @@ model UnavailableSlot {
   @@index([startTime, endTime])
 }
 
+
+model ClinicalExam {
+  id                   String   @id @default(cuid())
+  patientId            String
+  patient              Patient  @relation(fields: [patientId], references: [id])
+  date                 DateTime @default(now())
+  weight               Float?
+  height               Float?
+  heartRate            Int?
+  bloodPressure        String?
+  temperature          Float?
+  generalState         String?
+  conjonctives         String?
+  oedemes              String?
+  cardiacAuscultation  String?
+  pulmonaryAuscultation String?
+  abdomen              String?
+  uterusState          String?
+  uterineHeight        Float?
+  presentation         String?
+  bcf                  String?
+  adnexa               String?
+  cervixAspect         String?
+  vaginalDischarge     String?
+  dilatation           String?
+  effacement           String?
+  consistency          String?
+  presentationHeight   String?
+  breastExam           String?
+  clinicalConclusion   String?
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("clinical_exams")
+}

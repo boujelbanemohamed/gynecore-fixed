@@ -13,6 +13,7 @@ import * as secretaryController from '../controllers/secretaryController';
 import * as spController from '../controllers/secretaryPortalController';
 import * as passwordResetController from '../controllers/passwordResetController';
 import * as certificateController from '../controllers/certificateController';
+import * as clinicalExamController from '../controllers/clinicalExamController';
 import * as medicalLetterController from '../controllers/medicalLetterController';
 import * as unavailableSlotController from '../controllers/unavailableSlotController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
@@ -63,6 +64,12 @@ router.get('/doctor/certificates', authenticate, authorizeDoctor, certificateCon
 router.get('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.getCertificateById);
 router.post('/doctor/certificates', authenticate, authorizeDoctor, certificateController.createCertificate);
 router.delete('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.deleteCertificate);
+
+router.get('/doctor/clinical-exams', authenticate, authorizeDoctor, clinicalExamController.getClinicalExams);
+router.get('/doctor/clinical-exams/:id', authenticate, authorizeDoctor, clinicalExamController.getClinicalExamById);
+router.post('/doctor/clinical-exams', authenticate, authorizeDoctor, clinicalExamController.createClinicalExam);
+router.put('/doctor/clinical-exams/:id', authenticate, authorizeDoctor, clinicalExamController.updateClinicalExam);
+router.delete('/doctor/clinical-exams/:id', authenticate, authorizeDoctor, clinicalExamController.deleteClinicalExam);
 router.get('/doctor/medical-letters', authenticate, authorizeDoctor, medicalLetterController.getMedicalLetters);
 router.get('/doctor/medical-letters/:id', authenticate, authorizeDoctor, medicalLetterController.getMedicalLetterById);
 router.post('/doctor/medical-letters', authenticate, authorizeDoctor, medicalLetterController.createMedicalLetter);

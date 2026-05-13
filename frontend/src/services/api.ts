@@ -75,6 +75,11 @@ export const doctorAPI = {
   getUnavailableSlots: (params?: Record<string, unknown>) => api.get('/doctor/unavailable-slots', { params }),
   createUnavailableSlot: (data: Record<string, unknown>) => api.post('/doctor/unavailable-slots', data),
   deleteUnavailableSlot: (id: string) => api.delete(`/doctor/unavailable-slots/${id}`),
+  getClinicalExams: (params?: Record<string, unknown>) => api.get('/doctor/clinical-exams', { params }),
+  getClinicalExamById: (id: string) => api.get(`/doctor/clinical-exams/${id}`),
+  createClinicalExam: (data: Record<string, unknown>) => api.post('/doctor/clinical-exams', data),
+  updateClinicalExam: (id: string, data: Record<string, unknown>) => api.put(`/doctor/clinical-exams/${id}`, data),
+  deleteClinicalExam: (id: string) => api.delete(`/doctor/clinical-exams/${id}`),
   uploadLogo: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);

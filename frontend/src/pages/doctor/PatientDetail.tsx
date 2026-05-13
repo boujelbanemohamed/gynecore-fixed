@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doctorAPI } from '../../services/api';
+import ClinicalExamTab from './ClinicalExamTab';
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 type Tab = 'info'|'consultations'|'prescriptions'|'certificates'|'letters'|'appointments'|'documents';
@@ -846,6 +847,7 @@ const getCertFields = (t: string) => {
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: 'info', label: 'Informations' },
     { key: 'consultations', label: 'Consultations', count: patient.consultations?.length },
+    { key: 'exams', label: 'Examens cliniques' },
     { key: 'prescriptions', label: 'Ordonnances', count: patient.prescriptions?.length },
     { key: 'certificates', label: 'Certificats', count: certificates?.length },
   { key: 'letters', label: 'Courriers medicaux', count: letters?.length },
@@ -943,7 +945,10 @@ const getCertFields = (t: string) => {
         </div>
       )}
 
-      {/* ── TAB: Ordonnances ── */}
+      {/* ── TAB: Examens cliniques ── */}
+      {tab === 'exams' && <ClinicalExamTab patientId={id!} patientName={`${u.firstName} ${u.lastName}`} />}
+
+      {/* ── TAB: Ordonnances ── }}
       {tab === 'prescriptions' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {!patient.prescriptions?.length ? (
