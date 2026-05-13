@@ -955,7 +955,7 @@ const getCertFields = (t: string) => {
       {/* ── TAB: Examens cliniques ── */}
       {tab === 'exams' && <ClinicalExamTab patientId={id!} patientName={`${u.firstName} ${u.lastName}`} doctorProfile={doctorProfile} API_BASE={API_BASE} />}
 
-      {/* ── TAB: Ordonnances ── }}
+      {/* ── TAB: Ordonnances ── */}
       {tab === 'prescriptions' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {!patient.prescriptions?.length ? (

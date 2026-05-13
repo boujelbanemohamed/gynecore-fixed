@@ -76,7 +76,7 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctor
 
   const load = () => {
     setLoading(true);
-    doctorAPI.getClinicalExams({ patientId }).then(r => setExams(r.data.data.exams || [])).catch(() => {}).finally(() => setLoading(false));
+    doctorAPI.getClinicalExams({ patientId }).then(r => setExams(r.data.data || [])).catch(() => {}).finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, [patientId]);
 
