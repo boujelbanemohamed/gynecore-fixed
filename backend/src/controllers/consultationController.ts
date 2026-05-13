@@ -41,15 +41,39 @@ export const getConsultations = async (req: Request, res: Response) => {
     const doctorId = req.user!.userId;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
     const patientId = req.query.patientId as string;
+    const type = req.query.type as string;
+    const search = req.query.search as string;
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
 
-    // Restreint aux patients du médecin connecté
-    const where: Record<string, unknown> = {
-      patient: { doctorId },
-    };
-    if (patientId) where.patientId = patientId;
+    // Build where clause
+    const and: Record<string, unknown>[] = [{ patient: { doctorId } }];
+
+    if (patientId) and.push({ patientId });
+    if (type) and.push({ type });
+    if (startDate || endDate) {
+      const dateFilter: Record<string, unknown> = {};
+      if (startDate) dateFilter.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+      and.push({ date: dateFilter });
+    }
+    if (search) {
+      and.push({
+        OR: [
+          { patient: { user: { firstName: { contains: search, mode: 'insensitive' } } } },
+          { patient: { user: { lastName: { contains: search, mode: 'insensitive' } } } },
+          { diagnosis: { contains: search, mode: 'insensitive' } } as Record<string, unknown>,
+          { chiefComplaint: { contains: search, mode: 'insensitive' } } as Record<string, unknown>,
+        ],
+      });
+    }
 
     const consultations = await prisma.consultation.findMany({
-      where,
+      where: { AND: and },
       include: { patient: { include: { user: { select: { firstName: true, lastName: true, email: true } } } } },
       orderBy: { date: 'desc' },
       take: limit,
@@ -66,9 +90,8 @@ export const createConsultation = async (req: Request, res: Response) => {
     const doctorId = req.user!.userId;
     const data = createConsultationSchema.parse(req.body);
 
-    // Vérifie que le patient appartient à ce médecin
     const patient = await prisma.patient.findFirst({ where: { id: data.patientId, doctorId } });
-    if (!patient) return res.status(404).json({ success: false, error: 'Patiente non trouvée' });
+    if (!patient) return res.status(404).json({ success: false, error: 'Patiente non trouvee' });
 
     const consultation = await prisma.consultation.create({
       data: {
@@ -105,11 +128,10 @@ export const updateConsultation = async (req: Request, res: Response) => {
     const doctorId = req.user!.userId;
     const data = updateConsultationSchema.parse(req.body);
 
-    // Vérifie que la consultation appartient à un patient de ce médecin
     const consultation = await prisma.consultation.findFirst({
       where: { id, patient: { doctorId } },
     });
-    if (!consultation) return res.status(404).json({ success: false, error: 'Consultation non trouvée' });
+    if (!consultation) return res.status(404).json({ success: false, error: 'Consultation non trouvee' });
     const updated = await prisma.consultation.update({
       where: { id },
       data: {

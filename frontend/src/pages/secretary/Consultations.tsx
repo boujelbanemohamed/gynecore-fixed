@@ -1,34 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { secretaryAPI } from '../../services/api';
 
-const typeLabels: Record<string,string> = { FIRST_VISIT:'Premiere visite', FOLLOW_UP:'Suivi', EMERGENCY:'Urgence', ANNUAL_CHECKUP:'Bilan annuel', PRENATAL:'Prenatal', POSTNATAL:'Postnatal' };
+const typeLabels: Record<string, string> = {
+  FIRST_VISIT: 'Premiere visite', FOLLOW_UP: 'Suivi', EMERGENCY: 'Urgence',
+  ANNUAL_CHECKUP: 'Bilan annuel', PRENATAL: 'Prenatal', POSTNATAL: 'Postnatal'
+};
+
+const typeOptions = [
+  { value: '', label: 'Tous les types' },
+  { value: 'FIRST_VISIT', label: 'Premiere visite' },
+  { value: 'FOLLOW_UP', label: 'Suivi' },
+  { value: 'EMERGENCY', label: 'Urgence' },
+  { value: 'ANNUAL_CHECKUP', label: 'Bilan annuel' },
+  { value: 'PRENATAL', label: 'Prenatal' },
+  { value: 'POSTNATAL', label: 'Postnatal' },
+];
 
 const SecretaryConsultations = () => {
   const [consultations, setConsultations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
+  const [search, setSearch] = useState('');
+  const [type, setType] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    secretaryAPI.getConsultations().then(r => { setConsultations(r.data.data.consultations); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
+  const fetchConsultations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, unknown> = {};
+      if (search) params.search = search;
+      if (type) params.type = type;
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      const r = await secretaryAPI.getConsultations(params);
+      setConsultations(r.data.data.consultations);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [search, type, startDate, endDate]);
 
-  if (loading) return <div className="loading-screen"><div className="spinner"/></div>;
+  useEffect(() => { fetchConsultations(); }, [fetchConsultations]);
+
+  const resetFilters = () => { setSearch(''); setType(''); setStartDate(''); setEndDate(''); };
+  const activeFilterCount = [search, type, startDate, endDate].filter(Boolean).length;
+
+  const iS: React.CSSProperties = { padding: '7px 12px', borderRadius: 6, border: '1px solid #dee2e6', fontSize: 13, outline: 'none', backgroundColor: '#fff' };
+  const bS = (v: 'p' | 's') => ({ padding: '7px 14px', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: v === 'p' ? '1px solid #27ae60' : '1px solid #dee2e6', backgroundColor: v === 'p' ? '#27ae60' : '#fff', color: v === 'p' ? '#fff' : '#495057' });
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 500 }}>Consultations</h2>
-        <p className="text-muted text-sm">{consultations.length} consultation(s) - Lecture seule</p>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>Consultations</h2>
+          <p className="text-muted text-sm" style={{ margin: '4px 0 0' }}>{consultations.length} consultation(s) - Lecture seule{activeFilterCount > 0 && <span style={{ color: '#27ae60', marginLeft: 8 }}>({activeFilterCount} filtre(s) actif(s))</span>}</p>
+        </div>
+        <button onClick={() => setShowFilters(!showFilters)} style={{ ...bS('s'), display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filtres
+          {activeFilterCount > 0 && <span style={{ backgroundColor: '#27ae60', color: '#fff', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>{activeFilterCount}</span>}
+        </button>
       </div>
-      <div className="card" style={{ padding: 0 }}>
-        {!consultations.length ? <div className="empty-state"><p>Aucune consultation</p></div> : (
+
+      {showFilters && (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '12px 16px', backgroundColor: '#f8f9fa', borderRadius: 8, marginBottom: 16, border: '1px solid #e9ecef' }}>
+          <input type="text" placeholder="Rechercher (nom, diagnostic, motif)..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...iS, flex: 1, minWidth: 200 }} />
+          <select value={type} onChange={e => setType(e.target.value)} style={{ ...iS, cursor: 'pointer', minWidth: 160 }}>
+            {typeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, color: '#6c757d' }}>Du</span>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={iS} />
+            <span style={{ fontSize: 12, color: '#6c757d' }}>au</span>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={iS} />
+          </div>
+          {activeFilterCount > 0 && (
+            <button onClick={resetFilters} style={{ ...bS('s'), color: '#e74c3c', borderColor: '#e74c3c' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Reinitialiser
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+        {loading ? <div className="loading-screen"><div className="spinner"/></div> :
+        !consultations.length ? <div className="empty-state"><p>Aucune consultation{activeFilterCount > 0 ? ' avec ces filtres' : ''}</p></div> : (
           <table>
             <thead><tr><th>Date</th><th>Patiente</th><th>Type</th><th>Motif</th><th>Diagnostic</th><th>Traitement</th><th>Details</th></tr></thead>
             <tbody>{consultations.map((co: any) => {
               const u = co.patient?.user;
               return (
                 <tr key={co.id}>
-                  <td>{new Date(co.date).toLocaleDateString('fr-FR')}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(co.date).toLocaleDateString('fr-FR')}</td>
                   <td style={{ fontWeight: 500 }}>{u?.firstName} {u?.lastName}</td>
                   <td><span className="badge badge-info">{typeLabels[co.type] || co.type}</span></td>
                   <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{co.chiefComplaint || '-'}</td>
@@ -47,20 +111,7 @@ const SecretaryConsultations = () => {
           <div style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, width: 600, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ marginBottom: 16 }}>Details consultation</h3>
             <div style={{ display: 'grid', gap: 12 }}>
-              {[
-                ['Date', new Date(selected.date).toLocaleDateString('fr-FR')],
-                ['Patiente', selected.patient?.user?.firstName + ' ' + selected.patient?.user?.lastName],
-                ['Type', typeLabels[selected.type] || selected.type],
-                ['Motif', selected.chiefComplaint || '-'],
-                ['Symptomes', selected.symptoms || '-'],
-                ['Examen clinique', selected.clinicalExam || '-'],
-                ['Diagnostic', selected.diagnosis || '-'],
-                ['Traitement', selected.treatment || '-'],
-                ['Notes', selected.notes || '-'],
-                ['Poids', selected.weight ? selected.weight + ' kg' : '-'],
-                ['Tension', selected.bloodPressure || '-'],
-                ['Temperature', selected.temperature ? selected.temperature + ' C' : '-'],
-              ].map(([l, v]) => (
+              {[['Date', new Date(selected.date).toLocaleDateString('fr-FR')],['Patiente', selected.patient?.user?.firstName + ' ' + selected.patient?.user?.lastName],['Type', typeLabels[selected.type] || selected.type],['Motif', selected.chiefComplaint || '-'],['Symptomes', selected.symptoms || '-'],['Examen clinique', selected.clinicalExam || '-'],['Diagnostic', selected.diagnosis || '-'],['Traitement', selected.treatment || '-'],['Notes', selected.notes || '-'],['Poids', selected.weight ? selected.weight + ' kg' : '-'],['Tension', selected.bloodPressure || '-'],['Temperature', selected.temperature ? selected.temperature + ' C' : '-']].map(([l, v]) => (
                 <div key={l} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: '#555' }}>{l}</span>
                   <span style={{ fontSize: 14 }}>{v}</span>
