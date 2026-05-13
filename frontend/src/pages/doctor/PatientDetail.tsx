@@ -677,7 +677,7 @@ const getCertFields = (t: string) => {
     }).catch(() => {});
   };
   const loadLetters = () => {
-    doctorAPI.getMedicalLetters({ patientId: id }).then((r: any) => setLetters(r.data.data?.letters || [])).catch(() => {});
+    doctorAPI.getMedicalLetters({ patientId: id }).then((r: any) => setLetters(Array.isArray(r.data.data) ? r.data.data : r.data.data?.letters || [])).catch(() => {});
   };
   useEffect(() => { loadLetters(); }, [id]);
   useEffect(() => { loadCertificates(); }, [id]);
