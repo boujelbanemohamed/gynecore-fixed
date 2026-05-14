@@ -12,6 +12,7 @@ import PatientDetail from './pages/doctor/PatientDetail';
 import Consultations from './pages/doctor/Consultations';
 import Calendar from './pages/doctor/Calendar';
 import Settings from './pages/doctor/Settings';
+import AuditLogs from './pages/doctor/AuditLogs';
 import UnavailableSlots from './pages/doctor/UnavailableSlots';
 import Secretaries from './pages/doctor/Secretaries';
 import DoctorProfile from './pages/doctor/Profile';
@@ -51,6 +52,7 @@ const App: React.FC = () => (
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/secretaries" element={<Secretaries />} />
             <Route path="/unavailable-slots" element={<UnavailableSlots />} />
+            <Route path="/audit-logs" element={<AuditLogs />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<DoctorProfile />} />
           </Route>

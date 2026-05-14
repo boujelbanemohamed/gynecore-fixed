@@ -85,7 +85,7 @@ export const doctorAPI = {
   testSmtpConnection: (data?: any) => api.post('/doctor/smtp-config/test', data),
   deleteSmtpConfig: () => api.delete('/doctor/smtp-config'),
   changePassword: (data: { currentPassword: string; newPassword: string }) => api.put('/doctor/profile/password', data),
-  uploadLogo: (file: File) => {
+  getAuditLogs: (params: { page: number; limit: number }) => api.get('/doctor/audit-logs', { params }),  uploadLogo: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
     return api.post('/doctor/profile/logo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -105,7 +105,7 @@ export const secretaryAPI = {
   getDashboard: () => api.get('/secretary/dashboard'),
   getDoctorInfo: () => api.get('/secretary/doctor-info'),
   changePassword: (data: any) => api.put('/auth/secretary/password', data),
-  getPatients: (params?: any) => api.get('/secretary/patients', { params }),
+  getAuditLogs: (params: { page: number; limit: number }) => api.get('/doctor/audit-logs', { params }),  getPatients: (params?: any) => api.get('/secretary/patients', { params }),
   getPatient: (id: string) => api.get('/secretary/patients/' + id),
   createPatient: (data: any) => api.post('/secretary/patients', data),
   updatePatient: (id: string, data: any) => api.put('/secretary/patients/' + id, data),

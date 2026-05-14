@@ -1,3 +1,11 @@
+function formatDateFr(d: Date): string {
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function formatTimeFr(d: Date): string {
+  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
 import { Request, Response } from 'express';
 import { AppointmentStatus, ConsultationType } from '@prisma/client';
 import { z } from 'zod';
