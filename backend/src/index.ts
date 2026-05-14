@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { auditMiddleware } from "./middleware/auditLog";
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -23,8 +24,7 @@ const PORT = process.env.PORT || 4000;
 // ── Sécurité ──────────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
-
-// ── Rate limiting ─────────────────────────────────────────────────
+app.use(auditMiddleware);
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20,

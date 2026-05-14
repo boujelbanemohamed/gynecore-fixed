@@ -16,4 +16,4 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package.json ./
 RUN mkdir -p /app/uploads
 EXPOSE 4000
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

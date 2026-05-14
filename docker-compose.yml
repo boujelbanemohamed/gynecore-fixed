@@ -30,7 +30,7 @@ services:
     environment:
       PORT: 4000
       DATABASE_URL: postgresql://gynecare:gynecare_password@db:5432/gynecare
-      JWT_SECRET: change_me_in_production
+      JWT_SECRET: ${JWT_SECRET:-gynecare_change_me_in_production}
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: http://localhost:3000
       UPLOAD_DIR: ./uploads

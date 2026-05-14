@@ -1,12 +1,11 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../prisma";
 import { checkSlotAvailability } from './unavailableSlotController';
 import {
   sendAppointmentConfirmationEmail,
   sendAppointmentCancellationEmail,
 } from '../services/emailService';
 import bcrypt from 'bcryptjs';
-const prisma = new PrismaClient();
 
 const getDocId = async (uid: string) => {
   const u = await prisma.user.findUnique({ where: { id: uid }, select: { doctorId: true } });

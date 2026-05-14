@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { prisma } from "../prisma";
 
 // Obtenir l'ID du médecin depuis le JWT (fonctionne pour DOCTOR et SECRETARY)
 const getDoctorId = async (req: Request): Promise<string> => {

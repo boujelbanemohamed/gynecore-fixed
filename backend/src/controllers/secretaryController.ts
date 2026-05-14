@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../prisma";
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-const prisma = new PrismaClient();
 
 // List all secretaries for the logged-in doctor
 export const listSecretaries = async (req: Request, res: Response) => {
