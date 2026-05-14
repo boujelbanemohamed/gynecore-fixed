@@ -77,12 +77,12 @@ export const createClinicalExam = async (req: Request, res: Response) => {
     const exam = await prisma.clinicalExam.create({
       data: {
         patientId, date: date ? new Date(date) : new Date(),
-        weight: weight ? parseFloat(weight) : undefined,
-        height: height ? parseFloat(height) : undefined,
-        heartRate: heartRate ? parseInt(heartRate) : undefined,
-        bloodPressure, temperature: temperature ? parseFloat(temperature) : undefined,
+        weight: weight != null ? Number(weight) : undefined,
+        height: height != null ? Number(height) : undefined,
+        heartRate: heartRate != null ? Number(heartRate) : undefined,
+        bloodPressure, temperature: temperature != null ? Number(temperature) : undefined,
         generalState, conjonctives, oedemes, cardiacAuscultation, pulmonaryAuscultation,
-        abdomen, uterusState, uterineHeight: uterineHeight ? parseFloat(uterineHeight) : undefined,
+        abdomen, uterusState, uterineHeight: uterineHeight != null ? Number(uterineHeight) : undefined,
         presentation, bcf, adnexa, cervixAspect, vaginalDischarge, dilatation, effacement,
         consistency, presentationHeight, breastExam, clinicalConclusion, notes,
       },
@@ -104,15 +104,16 @@ export const updateClinicalExam = async (req: Request, res: Response) => {
     });
     if (!exam) return res.status(404).json({ success: false, error: 'Examen non trouve' });
 
-    const data = updateExamSchema.parse(req.body);
-    if (data.date) data.date = new Date(data.date as string);
-    if (data.weight) data.weight = parseFloat(data.weight as string);
-    if (data.height) data.height = parseFloat(data.height as string);
-    if (data.uterineHeight) data.uterineHeight = parseFloat(data.uterineHeight as string);
-    if (data.temperature) data.temperature = parseFloat(data.temperature as string);
+    const parsed = updateExamSchema.parse(req.body);
+    const updateData: Record<string, unknown> = { ...parsed };
+    if (updateData.date) updateData.date = new Date(updateData.date as string);
+    if (updateData.weight != null) updateData.weight = Number(updateData.weight);
+    if (updateData.height != null) updateData.height = Number(updateData.height);
+    if (updateData.uterineHeight != null) updateData.uterineHeight = Number(updateData.uterineHeight);
+    if (updateData.temperature != null) updateData.temperature = Number(updateData.temperature);
 
     const updated = await prisma.clinicalExam.update({
-      where: { id: req.params.id }, data,
+      where: { id: req.params.id }, data: updateData,
     });
     return res.json({ success: true, data: updated });
   } catch (err) {

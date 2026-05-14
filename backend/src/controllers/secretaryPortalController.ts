@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AppointmentStatus } from '@prisma/client';
 import { prisma } from "../prisma";
 import { checkSlotAvailability } from './unavailableSlotController';
 import {
@@ -215,7 +216,7 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const a = await prisma.appointment.findFirst({ where: { id: req.params.id, doctorId: did } });
     if (!a) return res.status(404).json({ success: false, message: 'Rendez-vous non trouve' });
     const newStatus = req.body.status as string;
-    const up = await prisma.appointment.update({ where: { id: req.params.id }, data: { status: newStatus } });
+    const up = await prisma.appointment.update({ where: { id: req.params.id }, data: { status: newStatus as AppointmentStatus } });
 
     // Envoi d'email alerte au patient
     const patientData = await prisma.appointment.findUnique({

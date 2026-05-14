@@ -26,8 +26,8 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false 
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
 app.use(auditMiddleware);
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '') || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX || '') || 20,
   message: { success: false, error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,

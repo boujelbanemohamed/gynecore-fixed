@@ -39,7 +39,7 @@ export const updateProfile = async (req: Request, res: Response) => {
   try {
     const data = updateProfileSchema.parse(req.body);
     if (data.email) {
-      const existing = await prisma.user.findFirst({ where: { email: data.email, NOT: { id: req.user.userId } } });
+      const existing = await prisma.user.findFirst({ where: { email: data.email, NOT: { id: req.user!.userId } } });
       if (existing) return res.status(409).json({ error: 'Email deja utilise.' });
     }
     const user = await prisma.user.update({
@@ -83,12 +83,12 @@ export const changePassword = async (req: Request, res: Response) => {
     if (newPassword.length < 8) {
       return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' });
     }
-    const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
     if (!user) return res.status(404).json({ error: 'Utilisateur non trouve.' });
     const valid = await bcrypt.compare(currentPassword, user.password);
     if (!valid) return res.status(401).json({ error: 'Ancien mot de passe incorrect.' });
     const hashed = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({ where: { id: req.user.userId }, data: { password: hashed } });
+    await prisma.user.update({ where: { id: req.user!.userId }, data: { password: hashed } });
     res.json({ message: 'Mot de passe mis a jour.' });
   } catch (err) {
     console.error('[changePassword] Erreur:', err);
