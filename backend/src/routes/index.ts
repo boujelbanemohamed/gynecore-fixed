@@ -66,6 +66,7 @@ router.delete('/doctor/prescriptions/:id', authenticate, authorizeDoctor, prescr
 router.get('/doctor/certificates', authenticate, authorizeDoctor, certificateController.getCertificates);
 router.get('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.getCertificateById);
 router.post('/doctor/certificates', authenticate, authorizeDoctor, certificateController.createCertificate);
+router.put('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.updateCertificate);
 router.delete('/doctor/certificates/:id', authenticate, authorizeDoctor, certificateController.deleteCertificate);
 
 router.get('/doctor/clinical-exams', authenticate, authorizeDoctor, clinicalExamController.getClinicalExams);

@@ -279,7 +279,7 @@ test.describe('Doctor-Secretary Cross Verification', () => {
 
     // 9. Verify appointment still exists via secretary API
     const secToken = await page.evaluate(() => localStorage.getItem('token'));
-    const secCheckResp = await page.request.get('http://localhost:4000/api/secretary/appointments', {
+    const secCheckResp = await page.request.get('http://localhost:4000/api/secretary/appointments?limit=10000', {
       headers: { 'Authorization': 'Bearer ' + secToken }
     });
     expect(secCheckResp.status()).toBe(200);

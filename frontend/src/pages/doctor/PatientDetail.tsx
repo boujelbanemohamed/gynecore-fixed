@@ -551,35 +551,6 @@ const getCertFields = (t: string) => {
     setCertType(type || 'APTITUDE');
     const fields = certFields[type || 'APTITUDE'] || [];
     const defaults: Record<string,string> = { certDate: new Date().toISOString().slice(0,10) };
-  const getCertFields = (t: string) => {
-    if (t === 'MATERNITY_LEAVE') {
-      const base = [
-        {key:'fullName',label:'Nom complet',type:'text',placeholder:'Nom Prenom'},
-        {key:'dateOfBirth',label:'Date de naissance',type:'date'},
-        {key:'leaveType',label:'Type de conge',type:'select',options:['Conge prenatal','Conge postnatal','Conge de maternite complet']},
-      ];
-      const obs = {key:'observations',label:'Observations',type:'textarea',placeholder:'Complications eventuelles...'};
-      const dur = {key:'totalDuration',label:'Duree totale (jours)',type:'text',placeholder:'auto-calcule'};
-      const lt = certForm.leaveType;
-      if (lt === 'Conge postnatal') {
-        return [...base,
-          {key:'dpa',label:"DPA ou Date d\'accouchement",type:'date'},
-          {key:'endDate',label:'Fin du conge postnatal',type:'date'},
-          dur, obs];
-      }
-      if (lt === 'Conge de maternite complet') {
-        return [...base,
-          {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
-          {key:'endDate',label:'Fin du conge de maternite',type:'date'},
-          dur, obs];
-      }
-      return [...base,
-        {key:'dpa',label:'DPA (Date Prevue d\'Accouchement)',type:'date'},
-        {key:'startDate',label:'Debut conge prenatal',type:'date'},
-        dur, obs];
-    }
-    return certFields[t];
-  };
     fields.forEach(f => { if (f.type === 'date' && f.key === 'certDate') return; defaults[f.key] = ''; });
     if (patient) {
       const p = patient;
@@ -1085,7 +1056,7 @@ const getCertFields = (t: string) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span>{certTypeIcons[cert.type] || '📄'}</span>
                       <span style={{ fontWeight: 500 }}>{certTypeLabels[cert.type] || cert.type}</span>
-                      <span className="badge badge-info">{new Date(cert.date).toLocaleDateString('fr-FR') + ' ' + new Date(cert.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' ' + new Date(cert.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
+                      <span className="badge badge-info">{new Date(cert.date).toLocaleDateString('fr-FR') + ' ' + new Date(cert.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-outline btn-sm" onClick={() => handlePrintCert(cert.id)}>🖨 Imprimer</button>
