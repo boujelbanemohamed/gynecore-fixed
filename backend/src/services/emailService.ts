@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '../prisma';
+import { decrypt } from '../utils/encryption';
 
 const transportCache = new Map<string, nodemailer.Transporter>();
 
@@ -11,7 +12,7 @@ async function getSmtpConfigForDoctor(doctorId: string) {
       port: config.smtpPort,
       secure: config.smtpSecure,
       user: config.smtpUser,
-      pass: config.smtpPass,
+      pass: decrypt(config.smtpPass),
       fromName: config.smtpFromName,
       fromEmail: config.smtpFromEmail,
     };

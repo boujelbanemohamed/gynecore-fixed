@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
+import { encrypt, decrypt } from '../utils/encryption';
 import { prisma } from '../prisma';
 
 // ── Schema de validation ──────────────────────────────────────────
@@ -68,7 +69,7 @@ export const saveSmtpConfig = async (req: Request, res: Response) => {
         smtpPort: data.smtpPort,
         smtpSecure: data.smtpSecure,
         smtpUser: data.smtpUser,
-        smtpPass: data.smtpPass,
+        smtpPass: encrypt(data.smtpPass),
         smtpFromName: data.smtpFromName,
         smtpFromEmail: data.smtpFromEmail,
         enabled: data.enabled,
@@ -79,7 +80,7 @@ export const saveSmtpConfig = async (req: Request, res: Response) => {
         smtpPort: data.smtpPort,
         smtpSecure: data.smtpSecure,
         smtpUser: data.smtpUser,
-        smtpPass: data.smtpPass,
+        smtpPass: encrypt(data.smtpPass),
         smtpFromName: data.smtpFromName,
         smtpFromEmail: data.smtpFromEmail,
         enabled: data.enabled,
