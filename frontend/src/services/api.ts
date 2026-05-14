@@ -14,8 +14,11 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('token');
-      const isPatientPortal = window.location.pathname.startsWith('/patient');
-      window.location.href = isPatientPortal ? '/patient/login' : '/login';
+      const path = window.location.pathname;
+      if (path.startsWith('/superadmin')) window.location.href = '/superadmin/login';
+      else if (path.startsWith('/patient')) window.location.href = '/patient/login';
+      else if (path.startsWith('/secretary')) window.location.href = '/secretary/login';
+      else window.location.href = '/login';
     }
     return Promise.reject(err);
   }
@@ -25,6 +28,7 @@ export const authAPI = {
   loginDoctor: (email: string, password: string) => api.post('/auth/login', { email, password }),
   loginPatient: (email: string, password: string) => api.post('/auth/patient/login', { email, password }),
   loginSecretary: (email: string, password: string) => api.post('/auth/secretary/login', { email, password }),
+  loginSuperadmin: (email: string, password: string) => api.post('/auth/superadmin/login', { email, password }),
   updateSecretaryProfile: (data: any) => api.put('/auth/secretary/profile', data),
   getMe: () => api.get('/auth/me'),
 };
@@ -101,6 +105,17 @@ export const patientAPI = {
 };
 
 export default api;
+
+export const superadminAPI = {
+  getDashboard: () => api.get('/superadmin/dashboard'),
+  getDoctors: () => api.get('/superadmin/doctors'),
+  createDoctor: (data: any) => api.post('/superadmin/doctors', data),
+  updateDoctor: (id: string, data: any) => api.put(`/superadmin/doctors/${id}`, data),
+  resetDoctorPassword: (id: string) => api.post(`/superadmin/doctors/${id}/reset-password`),
+  getUsers: () => api.get('/superadmin/users'),
+  getAuditLogs: (params?: any) => api.get('/superadmin/audit-logs', { params }),
+  getSettings: () => api.get('/superadmin/settings'),
+};
 
 export const secretaryAPI = {
   getDashboard: () => api.get('/secretary/dashboard'),

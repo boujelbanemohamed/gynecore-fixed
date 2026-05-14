@@ -120,7 +120,7 @@ export const getAllAuditLogs = async (req: Request, res: Response) => {
       const u = await prisma.user.findUnique({ where: { id: log.userId }, select: { email: true, firstName: true, lastName: true, role: true } });
       return { ...log, user: u };
     }));
-    res.json({ success: true, data: { logs, total, page, totalPages: Math.ceil(total / limit) } });
+    res.json({ success: true, data: { logs: logsWithUser, total, page, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     console.error('[superadmin getAllAuditLogs]', err);
     res.status(500).json({ success: false, error: 'Erreur serveur' });

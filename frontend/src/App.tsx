@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { DoctorRoute, PatientRoute, SecretaryRoute, PublicRoute } from './components/shared/RouteGuards';
+import { DoctorRoute, PatientRoute, SecretaryRoute, PublicRoute, SuperadminRoute } from './components/shared/RouteGuards';
 import DoctorLayout from './components/doctor/Layout';
 import PatientLayout from './components/patient/Layout';
 import SecretaryLayout from './components/secretary/Layout';
@@ -30,6 +30,12 @@ import SecretaryCalendar from './pages/secretary/Calendar';
 import SecretaryProfile from './pages/secretary/Profile';
 import ForgotPassword from './pages/shared/ForgotPassword';
 import ResetPassword from './pages/shared/ResetPassword';
+import SuperadminLogin from './pages/superadmin/Login';
+import SuperadminDashboard from './pages/superadmin/Dashboard';
+import SuperadminDoctors from './pages/superadmin/Doctors';
+import SuperadminAuditLogs from './pages/superadmin/AuditLogs';
+import SuperadminSettings from './pages/superadmin/Settings';
+import SuperadminLayout from './components/superadmin/Layout';
 
 const App: React.FC = () => (
   <AuthProvider>
@@ -42,6 +48,7 @@ const App: React.FC = () => (
           <Route path="/secretary/login" element={<SecretaryLogin />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/superadmin/login" element={<SuperadminLogin />} />
         </Route>
         <Route element={<DoctorRoute />}>
           <Route element={<DoctorLayout />}>
@@ -73,6 +80,14 @@ const App: React.FC = () => (
             <Route path="/secretary/calendar" element={<SecretaryCalendar />} />
             <Route path="/secretary/dashboard" element={<SecretaryDashboard />} />
             <Route path="/secretary/profile" element={<SecretaryProfile />} />
+          </Route>
+        </Route>
+        <Route element={<SuperadminRoute />}>
+          <Route element={<SuperadminLayout />}>
+            <Route path="/superadmin/dashboard" element={<SuperadminDashboard />} />
+            <Route path="/superadmin/doctors" element={<SuperadminDoctors />} />
+            <Route path="/superadmin/audit-logs" element={<SuperadminAuditLogs />} />
+            <Route path="/superadmin/settings" element={<SuperadminSettings />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

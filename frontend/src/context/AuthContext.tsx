@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI } from '../services/api';
 
-export type UserRole = 'DOCTOR' | 'ASSISTANT' | 'SECRETARY' | 'PATIENT';
+export type UserRole = 'DOCTOR' | 'ASSISTANT' | 'SECRETARY' | 'PATIENT' | 'SUPERADMIN';
 export interface AuthUser { id: string; email: string; firstName: string; lastName: string; role: UserRole; patientId?: string; doctorId?: string; }
-interface AuthContextType { user: AuthUser | null; token: string | null; loading: boolean; loginDoctor: (email: string, password: string) => Promise<void>; loginPatient: (email: string, password: string) => Promise<void>; loginSecretary: (email: string, password: string) => Promise<void>; logout: () => void; setUser: (u: any) => void; isDoctor: boolean; isPatient: boolean; isSecretary: boolean; }
+interface AuthContextType { user: AuthUser | null; token: string | null; loading: boolean; loginDoctor: (email: string, password: string) => Promise<void>; loginPatient: (email: string, password: string) => Promise<void>; loginSecretary: (email: string, password: string) => Promise<void>; loginSuperadmin: (email: string, password: string) => Promise<void>; logout: () => void; setUser: (u: any) => void; isDoctor: boolean; isPatient: boolean; isSecretary: boolean; isSuperadmin: boolean; }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -51,16 +51,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(t); setUser(u);
   };
 
+  const loginSuperadmin = async (email: string, password: string) => {
+    const res = await authAPI.loginSuperadmin(email, password);
+    const { token: t, user: u } = res.data.data;
+    localStorage.setItem('token', t);
+    setToken(t); setUser(u);
+  };
+
   const logout = () => {
     const isPatient = user?.role === 'PATIENT';
     const isSec = user?.role === 'SECRETARY';
+    const isSuper = user?.role === 'SUPERADMIN';
     localStorage.removeItem('token');
     setToken(null); setUser(null);
-    window.location.href = isPatient ? '/patient/login' : isSec ? '/secretary/login' : '/login';
+    window.location.href = isSuper ? '/superadmin/login' : isPatient ? '/patient/login' : isSec ? '/secretary/login' : '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, loginDoctor, loginPatient, loginSecretary, logout, setUser, isDoctor: user?.role === 'DOCTOR' || user?.role === 'ASSISTANT', isPatient: user?.role === 'PATIENT', isSecretary: user?.role === 'SECRETARY' }}>
+    <AuthContext.Provider value={{ user, token, loading, loginDoctor, loginPatient, loginSecretary, loginSuperadmin, logout, setUser, isDoctor: user?.role === 'DOCTOR' || user?.role === 'ASSISTANT', isPatient: user?.role === 'PATIENT', isSecretary: user?.role === 'SECRETARY', isSuperadmin: user?.role === 'SUPERADMIN' }}>
       {children}
     </AuthContext.Provider>
   );
