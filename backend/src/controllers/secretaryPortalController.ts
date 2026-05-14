@@ -91,11 +91,12 @@ export const createPatient = async (req: Request, res: Response) => {
     const { firstName, lastName, email, phone, dateOfBirth, address, city, postalCode, country } = req.body;
     if (!dateOfBirth) return res.status(400).json({ success: false, message: 'dateOfBirth requis' });
     if (email) { const ex = await prisma.user.findUnique({ where: { email } }); if (ex) return res.status(400).json({ success: false, message: 'Email deja utilise' }); }
+    const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-4,8).toUpperCase();
     const u = await prisma.user.create({
-      data: { firstName, lastName, email, phone, role: 'PATIENT', password: 'GyneCare2024', patient: { create: { doctorId: did, dateOfBirth: new Date(dateOfBirth), address, city, postalCode, country } } },
+      data: { firstName, lastName, email, phone, role: 'PATIENT', password: await bcrypt.hash(tempPassword, 10), patient: { create: { doctorId: did, dateOfBirth: new Date(dateOfBirth), address, city, postalCode, country } } },
       include: { patient: true },
     });
-    res.json({ success: true, data: u });
+    res.json({ success: true, data: { ...u, tempPassword } });
   } catch (e: any) { res.status(500).json({ success: false, message: e.message }); }
 };
 
