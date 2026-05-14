@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from "../prisma";
+import { sendSecretaryEmail } from '../services/notificationService';
 
 // Obtenir l'ID du médecin depuis le JWT (fonctionne pour DOCTOR et SECRETARY)
 const getDoctorId = async (req: Request): Promise<string> => {
@@ -93,6 +94,20 @@ export const createUnavailableSlot = async (req: Request, res: Response) => {
     const slot = await prisma.unavailableSlot.create({
       data: { doctorId, startTime: start, endTime: end, reason: reason || null },
     });
+
+    // Envoi notification indisponibilité à la/les secrétaire(s)
+    const doctor = await prisma.user.findUnique({ where: { id: doctorId }, select: { firstName: true, lastName: true } });
+    if (doctor) {
+      const frD = start.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const frT = `${start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+      sendSecretaryEmail(doctorId, 'unavailable_slot_created', {
+        doctorFirstName: doctor.firstName,
+        doctorLastName: doctor.lastName,
+        appointmentDate: frD,
+        appointmentTime: frT,
+        reason: reason || 'Non spécifié',
+      }).catch(() => {});
+    }
 
     res.status(201).json({ success: true, data: slot });
   } catch (e: any) {

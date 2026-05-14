@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { doctorAPI } from '../../services/api';
+import Alert from '../../components/shared/Alert';
 
 const IMG_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -9,6 +10,7 @@ const Settings: React.FC = () => {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string|null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [form, setForm] = useState({
     specialization: '', licenseNumber: '', rppsNumber: '',
@@ -43,7 +45,7 @@ const Settings: React.FC = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erreur lors de la sauvegarde');
+      setErrorMsg(err.response?.data?.error || 'Erreur lors de la sauvegarde');
     } finally { setSaving(false); }
   };
 
@@ -54,7 +56,7 @@ const Settings: React.FC = () => {
     try {
       const res = await doctorAPI.uploadLogo(file);
       update({ logo: res.data.data.logo });
-    } catch { alert("Erreur lors de l'upload du logo"); }
+    } catch { setErrorMsg("Erreur lors de l'upload du logo"); }
     finally { setUploadingLogo(false); }
   };
 
@@ -137,7 +139,7 @@ const Settings: React.FC = () => {
                   {form.logo ? 'Changer le logo' : 'Telecharger un logo'}
                 </button>
                 {form.logo && (
-                  <button type="button" className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={async () => { try { await doctorAPI.updateProfile({ logo: null as any }); update({ logo: '' }); } catch { alert("Erreur lors de la suppression du logo"); } }}>
+                  <button type="button" className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={async () => { try { await doctorAPI.updateProfile({ logo: null as any }); update({ logo: '' }); } catch { setErrorMsg("Erreur lors de la suppression du logo"); } }}>
                     Supprimer
                   </button>
                 )}
@@ -152,6 +154,7 @@ const Settings: React.FC = () => {
           </button>
           {success && <span style={{ color: '#28a745', fontSize: 14, fontWeight: 500 }}>Parametres mis a jour avec succes !</span>}
         </div>
+      {errorMsg && <Alert type="error" message={errorMsg} onClose={() => setErrorMsg(null)} autoClose={4000} />}
       </form>
 
     </div>

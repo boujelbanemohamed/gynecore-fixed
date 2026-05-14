@@ -69,6 +69,29 @@ export const createCertificate = async (req: Request, res: Response) => {
   }
 };
 
+export const updateCertificate = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const doctorId = req.user!.userId;
+    const cert = await prisma.certificate.findUnique({ where: { id } });
+    if (!cert) return res.status(404).json({ success: false, error: 'Certificat non trouve' });
+    const patient = await prisma.patient.findFirst({ where: { id: cert.patientId, doctorId } });
+    if (!patient) return res.status(403).json({ success: false, error: 'Acces refuse' });
+    const data: any = {};
+    if (req.body.type) data.type = req.body.type;
+    if (req.body.content !== undefined) data.content = req.body.content;
+    const updated = await prisma.certificate.update({
+      where: { id },
+      data,
+      include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
+    });
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('[updateCertificate] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
 export const deleteCertificate = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

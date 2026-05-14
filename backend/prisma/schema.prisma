@@ -73,7 +73,7 @@ model User {
   appointments    Appointment[] @relation("DoctorAppointments")
   managedPatients Patient[]     @relation("DoctorPatients")
   resetTokens      PasswordResetToken[]
-  secretary       User?    @relation("DoctorSecretary", fields: [doctorId], references: [id])
+  secretary       User?    @relation("DoctorSecretary", fields: [doctorId], references: [id], onDelete: SetNull)
   secretaries    User[]   @relation("DoctorSecretary")
 
   smtpConfigs      SmtpConfig[]
@@ -84,7 +84,7 @@ model User {
 model Patient {
   id                  String    @id @default(cuid())
   userId              String    @unique
-  user                User      @relation(fields: [userId], references: [id])
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctorId            String?
   doctor              User?     @relation("DoctorPatients", fields: [doctorId], references: [id])
   isArchived          Boolean   @default(false)
@@ -120,7 +120,7 @@ model Patient {
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String
   expiresAt DateTime
   createdAt DateTime @default(now())
@@ -131,7 +131,7 @@ model PasswordResetToken {
 model Consultation {
   id             String           @id @default(cuid())
   patientId      String
-  patient        Patient          @relation(fields: [patientId], references: [id])
+  patient        Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   date           DateTime
   type           ConsultationType @default(FIRST_VISIT)
   chiefComplaint String?
@@ -149,15 +149,16 @@ model Consultation {
   updatedAt      DateTime         @updatedAt
   prescriptions  Prescription[]
 
+  @@index([date])
   @@map("consultations")
 }
 
 model Prescription {
   id             String        @id @default(cuid())
   patientId      String
-  patient        Patient       @relation(fields: [patientId], references: [id])
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
   consultationId String?
-  consultation   Consultation? @relation(fields: [consultationId], references: [id])
+  consultation   Consultation? @relation(fields: [consultationId], references: [id], onDelete: SetNull)
   date           DateTime      @default(now())
   medications    Json
   notes          String?
@@ -172,7 +173,7 @@ model Prescription {
 model Appointment {
   id        String            @id @default(cuid())
   patientId String
-  patient   Patient           @relation(fields: [patientId], references: [id])
+  patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
   doctorId  String
   doctor    User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
   startTime DateTime
@@ -184,13 +185,15 @@ model Appointment {
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
+  @@index([doctorId])
+  @@index([startTime])
   @@map("appointments")
 }
 
 model Document {
   id        String   @id @default(cuid())
   patientId String
-  patient   Patient  @relation(fields: [patientId], references: [id])
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   name      String
   type      String
   url       String
@@ -204,7 +207,7 @@ model Document {
 model Certificate {
   id             String           @id @default(cuid())
   patientId      String
-  patient        Patient          @relation(fields: [patientId], references: [id])
+  patient        Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   type           CertificateType
   date           DateTime         @default(now())
   content        Json
@@ -219,7 +222,7 @@ model Certificate {
 model MedicalLetter {
   id         String   @id @default(cuid())
   patientId  String
-  patient    Patient  @relation(fields: [patientId], references: [id])
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   type       String
   recipient  String
   subject    String
@@ -241,6 +244,7 @@ model AuditLog {
   ipAddress String?
   createdAt DateTime @default(now())
 
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -261,7 +265,7 @@ model UnavailableSlot {
 model ClinicalExam {
   id                   String   @id @default(cuid())
   patientId            String
-  patient              Patient  @relation(fields: [patientId], references: [id])
+  patient              Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   date                 DateTime @default(now())
   weight               Float?
   height               Float?

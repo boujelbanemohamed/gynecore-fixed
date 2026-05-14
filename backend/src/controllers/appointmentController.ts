@@ -15,12 +15,15 @@ import {
   sendAppointmentConfirmationEmail,
   sendAppointmentCancellationEmail,
 } from '../services/emailService';
+import {
+  sendDoctorEmail,
+  sendPatientEmail,
+} from '../services/notificationService';
 
 // ── Schemas de validation ──────────────────────────────────────────
 
 const createAppointmentSchema = z.object({
   patientId: z.string().min(1, 'patientId requis'),
-  doctorId: z.string().min(1, 'doctorId requis'),
   startTime: z.string().min(1, 'startTime requis'),
   endTime: z.string().min(1, 'endTime requis'),
   type: z.nativeEnum(ConsultationType).optional(),
@@ -76,11 +79,12 @@ export const getAppointments = async (req: Request, res: Response) => {
 export const createAppointment = async (req: Request, res: Response) => {
   try {
     const data = createAppointmentSchema.parse(req.body);
+    const doctorId = req.user!.userId;
 
     // Vérification de conflit d'horaire pour le médecin
     const conflicting = await prisma.appointment.count({
       where: {
-        doctorId: data.doctorId,
+        doctorId,
         status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED] },
         startTime: { lt: new Date(data.endTime) },
         endTime: { gt: new Date(data.startTime) },
@@ -94,7 +98,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     }
 
     // Vérifier la disponibilité du créneau
-    const isAvailable = await checkSlotAvailability(data.doctorId, new Date(data.startTime), new Date(data.endTime));
+    const isAvailable = await checkSlotAvailability(doctorId, new Date(data.startTime), new Date(data.endTime));
     if (!isAvailable) {
       return res.status(409).json({ success: false, message: 'Ce créneau est indisponible. Veuillez choisir un autre horaire.' });
     }
@@ -102,7 +106,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     const appointment = await prisma.appointment.create({
       data: {
         patientId: data.patientId,
-        doctorId: data.doctorId,
+        doctorId,
         type: data.type,
         reason: data.reason,
         notes: data.notes,
@@ -110,10 +114,30 @@ export const createAppointment = async (req: Request, res: Response) => {
         endTime: new Date(data.endTime),
       },
       include: {
-        patient: { include: { user: { select: { firstName: true, lastName: true } } } },
-        doctor: { select: { firstName: true, lastName: true } },
+        patient: { include: { user: { select: { firstName: true, lastName: true, email: true } } } },
+        doctor: { select: { firstName: true, lastName: true, email: true, clinicName: true, address: true } },
       },
     });
+
+    // Envoi notifications création RDV
+    const frDateApt = formatDateFr(new Date(appointment.startTime));
+    const frTimeApt = formatTimeFr(new Date(appointment.startTime));
+    const ctx = {
+      patientFirstName: appointment.patient.user.firstName,
+      patientLastName: appointment.patient.user.lastName,
+      patientEmail: appointment.patient.user.email || '',
+      doctorFirstName: appointment.doctor.firstName,
+      doctorLastName: appointment.doctor.lastName,
+      appointmentDate: frDateApt,
+      appointmentTime: frTimeApt,
+      appointmentType: appointment.type,
+      appointmentReason: appointment.reason || '',
+      clinicName: appointment.doctor.clinicName || '',
+      clinicAddress: appointment.doctor.address || '',
+    };
+    sendDoctorEmail(doctorId, 'appointment_created_doctor', ctx).catch(() => {});
+    sendPatientEmail(appointment.patientId, doctorId, 'appointment_created_patient', ctx).catch(() => {});
+
     return res.status(201).json({ success: true, data: appointment });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -149,6 +173,15 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     }
 
     const appointment = await prisma.appointment.update({ where: { id }, data: { status } });
+
+    // Envoi notification changement de statut au médecin
+    sendDoctorEmail(doctorId, 'appointment_status_changed', {
+      patientFirstName: current.patient.user.firstName,
+      patientLastName: current.patient.user.lastName,
+      appointmentDate: formatDateFr(new Date(current.startTime)),
+      appointmentTime: formatTimeFr(new Date(current.startTime)),
+      appointmentStatus: status,
+    }).catch(() => {});
 
     // Envoi d'email alerte selon le nouveau statut
     const patientEmail = current.patient?.user?.email;

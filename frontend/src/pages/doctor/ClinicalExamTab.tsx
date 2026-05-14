@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doctorAPI } from '../../services/api';
+import Alert from '../../components/shared/Alert';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 const emptyForm = () => ({
   date: new Date().toISOString().slice(0, 16),
@@ -72,7 +74,8 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctor
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<any>(emptyForm());
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string|null>(null);
+  const [alertMsg, setAlertMsg] = useState<{type:string;text:string}|null>(null);
 
   const load = () => {
     setLoading(true);
@@ -94,13 +97,13 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctor
     try {
       await (doctorAPI as any).createClinicalExam({ patientId, ...form });
       load(); setShowModal(false);
-    } catch (err: any) { alert(err.response?.data?.error || 'Erreur'); }
+    } catch (err: any) { setAlertMsg({ type: 'error', text: err.response?.data?.error || 'Erreur' }); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
-    try { await (doctorAPI as any).deleteClinicalExam(id); load(); setConfirmDelete(null); }
-    catch { alert('Erreur'); }
+    try { await (doctorAPI as any).deleteClinicalExam(id); load(); setConfirmDeleteId(null); }
+    catch { setAlertMsg({ type: 'error', text: 'Erreur' }); }
   };
 
 
@@ -246,7 +249,7 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctor
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <button className="btn btn-outline btn-sm" onClick={e => { e.stopPropagation(); handleEdit(ex); }}>Modifier</button>
                       <button className="btn btn-outline btn-sm" onClick={e => { e.stopPropagation(); handlePrint(ex); }}>Imprimer</button>
-                      <button className="btn btn-outline btn-sm" style={{ color: '#e74c3c', borderColor: '#f5c6c3' }} onClick={e => { e.stopPropagation(); setConfirmDelete(ex.id); }}>Supprimer</button>
+                      <button className="btn btn-outline btn-sm" style={{ color: '#e74c3c', borderColor: '#f5c6c3' }} onClick={e => { e.stopPropagation(); setConfirmDeleteId(ex.id); }}>Supprimer</button>
                     <span style={{ fontSize: 12, color: '#999' }}>{isExpanded ? '▲' : '▼'}</span>
                   </div>
                 </div>
@@ -416,18 +419,17 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctor
         </div>
       )}
 
-      {/* Confirm delete */}
-      {confirmDelete && (
-        <div className="confirm-overlay">
-          <div className="confirm-box">
-            <p>Supprimer cet examen clinique ?</p>
-            <div className="confirm-actions">
-              <button className="btn btn-outline" onClick={() => setConfirmDelete(null)}>Non</button>
-              <button className="btn btn-primary" style={{ background: 'var(--danger)' }} onClick={() => handleDelete(confirmDelete)}>Oui, supprimer</button>
-            </div>
-          </div>
-        </div>
+      {confirmDeleteId && (
+        <ConfirmDialog
+          isOpen={true}
+          message="Supprimer cet examen clinique ?"
+          confirmLabel="Oui, supprimer"
+          confirmDanger={true}
+          onConfirm={() => handleDelete(confirmDeleteId)}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       )}
+      {alertMsg && <Alert type="error" message={alertMsg.text} onClose={() => setAlertMsg(null)} autoClose={4000} />}
     </div>
   );
 };

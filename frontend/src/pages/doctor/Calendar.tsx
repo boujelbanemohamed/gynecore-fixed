@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { doctorAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import Alert from '../../components/shared/Alert';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 const typeLabels: Record<string,string> = {
   FIRST_VISIT:'Premi\u00e8re visite', FOLLOW_UP:'Suivi', EMERGENCY:'Urgence',
@@ -27,6 +29,8 @@ const Calendar: React.FC = () => {
   const [showNewPatient, setShowNewPatient] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [alertMsg, setAlertMsg] = useState<{type:'success'|'error'|'warning'|'info';text:string}|null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{message:string;onConfirm:()=>void}|null>(null);
 
   // Patient search
   const [patientSearch, setPatientSearch] = useState('');
@@ -151,11 +155,16 @@ const Calendar: React.FC = () => {
   };
 
   const handleDeleteUnavail = async (slotId: string) => {
-    if (!confirm('Supprimer ce creneau d\'indisponibilite ?')) return;
-    try {
-      await doctorAPI.deleteUnavailableSlot(slotId);
-      setUnavailSlots(prev=>prev.filter(s=>s.id!==slotId));
-    } catch {}
+    setConfirmDialog({
+      message: 'Supprimer ce creneau d\'indisponibilite ?',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await doctorAPI.deleteUnavailableSlot(slotId);
+          setUnavailSlots(prev=>prev.filter(s=>s.id!==slotId));
+        } catch {}
+      }
+    });
   };
 
   // Create patient then set as selected
@@ -226,7 +235,7 @@ const Calendar: React.FC = () => {
       doctorAPI.getAppointments({start:start.toISOString(),end:end.toISOString()})
         .then(r=>setAppointments(r.data.data)).catch(()=>{});
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erreur lors de la mise \u00e0 jour du statut.');
+      setAlertMsg({type:'error', text: err.response?.data?.error || 'Erreur lors de la mise \u00e0 jour du statut.'});
     }
   };
 
@@ -544,6 +553,17 @@ const Calendar: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={true}
+          message={confirmDialog.message}
+          onConfirm={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
+      {alertMsg && (
+        <Alert type={alertMsg.type} message={alertMsg.text} onClose={() => setAlertMsg(null)} autoClose={4000} />
       )}
     </div>
   );

@@ -9,6 +9,7 @@ export const getMyDossier = async (req: Request, res: Response) => {
       include: {
         user: { select: { firstName: true, lastName: true, email: true, phone: true } },
         consultations: {
+          where: { isConfidential: false },
           orderBy: { date: 'desc' }, take: 5,
           select: { id: true, date: true, type: true, diagnosis: true, nextVisit: true, treatment: true },
         },

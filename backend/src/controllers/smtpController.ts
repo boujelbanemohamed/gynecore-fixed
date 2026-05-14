@@ -23,17 +23,16 @@ export const getSmtpConfig = async (req: Request, res: Response) => {
     const config = await prisma.smtpConfig.findUnique({ where: { doctorId } });
 
     if (!config) {
-      // Retourner la config par defaut (valeurs depuis .env si disponibles)
       return res.json({
         success: true,
         data: {
-          smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
-          smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
-          smtpSecure: (process.env.SMTP_SECURE || 'false') === 'true',
-          smtpUser: process.env.SMTP_USER || '',
-          smtpPass: '', // Jamais renvoyer le mot de passe stocke
-          smtpFromName: process.env.SMTP_FROM_NAME || 'GyneCare',
-          smtpFromEmail: process.env.SMTP_FROM_EMAIL || '',
+          smtpHost: '',
+          smtpPort: 587,
+          smtpSecure: false,
+          smtpUser: '',
+          smtpPass: '',
+          smtpFromName: '',
+          smtpFromEmail: '',
           enabled: false,
         },
       });

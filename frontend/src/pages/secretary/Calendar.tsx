@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { secretaryAPI } from '../../services/api';
+import Alert from '../../components/shared/Alert';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 const statusOptions = ['SCHEDULED','CONFIRMED','PENDING','ARRIVED','IN_PROGRESS','COMPLETED','CANCELLED','POSTPONED','NO_SHOW'];
 const statusLabels: Record<string,string> = { SCHEDULED:'Planifie', CONFIRMED:'Confirme', PENDING:'En attente', ARRIVED:'Arrive', IN_PROGRESS:'En consultation', COMPLETED:'Termine', CANCELLED:'Annule', POSTPONED:'Reporte', NO_SHOW:'Absent' };
@@ -18,6 +20,8 @@ const SecretaryCalendar = () => {
   const [patients, setPatients] = useState<any[]>([]);
   const [unavailSlots, setUnavailSlots] = useState<any[]>([]);
   const [form, setForm] = useState({ patientId: '', date: '', startTime: '', endTime: '', type: 'FIRST_VISIT', reason: '', notes: '', status: 'SCHEDULED' });
+  const [alertMsg, setAlertMsg] = useState<{type:'success'|'error'|'warning'|'info';text:string}|null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{message:string;onConfirm:()=>void}|null>(null);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -57,13 +61,18 @@ const SecretaryCalendar = () => {
         await secretaryAPI.createAppointment(data);
       }
       setShowModal(false); fetchAppointments();
-    } catch (e: any) { alert(e.response?.data?.message || 'Erreur'); }
+    } catch (e: any) { setAlertMsg({type:'error', text: e.response?.data?.message || 'Erreur'}); }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce rendez-vous ?')) return;
-    await secretaryAPI.deleteAppointment(id);
-    fetchAppointments();
+    setConfirmDialog({
+      message: 'Supprimer ce rendez-vous ?',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await secretaryAPI.deleteAppointment(id);
+        fetchAppointments();
+      }
+    });
   };
 
   const handleStatus = async (id: string, status: string) => {
@@ -181,6 +190,17 @@ const SecretaryCalendar = () => {
             </div>
           </div>
         </div>
+      )}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={true}
+          message={confirmDialog.message}
+          onConfirm={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
+      {alertMsg && (
+        <Alert type={alertMsg.type} message={alertMsg.text} onClose={() => setAlertMsg(null)} autoClose={4000} />
       )}
     </div>
   );

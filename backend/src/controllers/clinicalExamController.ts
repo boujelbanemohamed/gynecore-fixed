@@ -53,10 +53,12 @@ export const getClinicalExams = async (req: Request, res: Response) => {
 
 export const getClinicalExamById = async (req: Request, res: Response) => {
   try {
-    const exam = await prisma.clinicalExam.findUnique({ where: { id: req.params.id } });
+    const doctorId = req.user!.userId;
+    const exam = await prisma.clinicalExam.findFirst({ where: { id: req.params.id, patient: { doctorId } } });
     if (!exam) return res.status(404).json({ success: false, error: 'Examen non trouve' });
     return res.json({ success: true, data: exam });
   } catch (err) {
+    console.error('[getClinicalExamById]', err);
     return res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 };

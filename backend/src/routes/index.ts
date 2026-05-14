@@ -17,6 +17,7 @@ import * as clinicalExamController from '../controllers/clinicalExamController';
 import * as medicalLetterController from '../controllers/medicalLetterController';
 import * as unavailableSlotController from '../controllers/unavailableSlotController';
 import * as smtpController from '../controllers/smtpController';
+import * as templateController from '../controllers/templateController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
 import * as superadminController from '../controllers/superadminController';
 
@@ -135,5 +136,14 @@ router.post('/superadmin/secretaries/:id/reset-password', authenticate, authoriz
 router.patch('/superadmin/secretaries/:id/toggle-status', authenticate, authorizeSuperadmin, superadminController.toggleSecretaryStatus);
 router.put('/superadmin/profile', authenticate, authorizeSuperadmin, authController.updateSuperadminProfile);
 router.put('/superadmin/password', authenticate, authorizeSuperadmin, superadminController.changeSuperadminPassword);
+router.get('/superadmin/health', authenticate, authorizeSuperadmin, superadminController.getSystemHealth);
+
+// ===== Template management (superadmin) =====
+router.get('/superadmin/templates', authenticate, authorizeSuperadmin, templateController.getTemplatesList);
+router.put('/superadmin/templates/:key', authenticate, authorizeSuperadmin, templateController.updateTemplate);
+router.post('/superadmin/templates/:key/reset', authenticate, authorizeSuperadmin, templateController.resetTemplate);
+router.post('/superadmin/templates/test', authenticate, authorizeSuperadmin, templateController.testTemplate);
+router.get('/superadmin/reminder-settings', authenticate, authorizeSuperadmin, templateController.getReminderSettings);
+router.put('/superadmin/reminder-settings', authenticate, authorizeSuperadmin, templateController.updateReminderSettings);
 
 export default router;

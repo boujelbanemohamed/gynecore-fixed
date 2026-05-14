@@ -52,6 +52,7 @@ export const doctorAPI = {
   getCertificates: (params?: Record<string, unknown>) => api.get('/doctor/certificates', { params }),
   getCertificateById: (id: string) => api.get(`/doctor/certificates/${id}`),
   createCertificate: (data: unknown) => api.post('/doctor/certificates', data),
+  updateCertificate: (id: string, data: unknown) => api.put(`/doctor/certificates/${id}`, data),
   deleteCertificate: (id: string) => api.delete(`/doctor/certificates/${id}`),
   getMedicalLetters: (params?: Record<string, unknown>) => api.get('/doctor/medical-letters', { params }),
   getMedicalLetterById: (id: string) => api.get(`/doctor/medical-letters/${id}`),
@@ -120,6 +121,13 @@ export const superadminAPI = {
   changePassword: (data: any) => api.put('/superadmin/password', data),
   resetSecretaryPassword: (id: string) => api.post(`/superadmin/secretaries/${id}/reset-password`),
   toggleSecretaryStatus: (id: string) => api.patch(`/superadmin/secretaries/${id}/toggle-status`),
+  getTemplates: () => api.get('/superadmin/templates'),
+  updateTemplate: (key: string, data: { subject: string; body: string }) => api.put(`/superadmin/templates/${key}`, data),
+  resetTemplate: (key: string) => api.post(`/superadmin/templates/${key}/reset`),
+  testTemplate: (data: { key: string; to: string; subject?: string; body?: string }) => api.post('/superadmin/templates/test', data),
+  getReminderSettings: () => api.get('/superadmin/reminder-settings'),
+  updateReminderSettings: (data: { reminderTimings: number[] }) => api.put('/superadmin/reminder-settings', data),
+  getHealth: () => api.get('/superadmin/health'),
 };
 
 export const secretaryAPI = {

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Role, AppointmentStatus, ConsultationType } from '@prisma/client';
+import { Role, AppointmentStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../prisma';

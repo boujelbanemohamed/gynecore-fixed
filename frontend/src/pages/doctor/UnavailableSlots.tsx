@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doctorAPI } from '../../services/api';
+import Alert from '../../components/shared/Alert';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 interface Slot {
   id: string;
@@ -14,6 +16,7 @@ const UnavailableSlots: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{message:string;onConfirm:()=>void}|null>(null);
 
   // Formulaire
   const [startDate, setStartDate] = useState('');
@@ -66,14 +69,19 @@ const UnavailableSlots: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce creneau indisponible ?')) return;
-    try {
-      await doctorAPI.deleteUnavailableSlot(id);
-      setSlots(prev => prev.filter(s => s.id !== id));
-      setSuccessMsg('Creneau supprime');
-    } catch {
-      setError('Erreur lors de la suppression');
-    }
+    setConfirmDialog({
+      message: 'Supprimer ce creneau indisponible ?',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await doctorAPI.deleteUnavailableSlot(id);
+          setSlots(prev => prev.filter(s => s.id !== id));
+          setSuccessMsg('Creneau supprime');
+        } catch {
+          setError('Erreur lors de la suppression');
+        }
+      }
+    });
   };
 
   const fmt = (dt: string) => {
@@ -153,8 +161,15 @@ const UnavailableSlots: React.FC = () => {
           </div>
         )}
       </div>
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={true}
+          message={confirmDialog.message}
+          onConfirm={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 };
-
 export default UnavailableSlots;

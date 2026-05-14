@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { doctorAPI } from '../../services/api';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 const SmtpSettings: React.FC = () => {
   const [form, setForm] = useState({
@@ -19,6 +20,7 @@ const SmtpSettings: React.FC = () => {
   const [error, setError] = useState('');
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     doctorAPI.getSmtpConfig().then(r => {
@@ -57,8 +59,12 @@ const SmtpSettings: React.FC = () => {
     } finally { setTesting(false); }
   };
 
-  const handleReset = async () => {
-    if (!confirm('Revenir aux valeurs par defaut ? La configuration SMTP sera supprimee.')) return;
+  const handleReset = () => {
+    setShowResetConfirm(true);
+  };
+
+  const confirmReset = async () => {
+    setShowResetConfirm(false);
     try {
       await doctorAPI.deleteSmtpConfig();
       setForm({
@@ -198,6 +204,14 @@ const SmtpSettings: React.FC = () => {
           </button>
         </div>
       </div>
+      {showResetConfirm && (
+        <ConfirmDialog
+          isOpen={true}
+          message="Revenir aux valeurs par defaut ? La configuration SMTP sera supprimee."
+          onConfirm={confirmReset}
+          onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
     </form>
   );
 };

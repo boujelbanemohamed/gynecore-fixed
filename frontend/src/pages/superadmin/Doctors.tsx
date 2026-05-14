@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { superadminAPI } from '../../services/api';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 const modalOverlay: React.CSSProperties = {
   position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000,
@@ -82,6 +83,7 @@ const SuperadminDoctors: React.FC = () => {
   const [msg, setMsg] = useState<{type:string;text:string}|null>(null);
   const [detailDoctor, setDetailDoctor] = useState<any>(null);
   const [detailSecretary, setDetailSecretary] = useState<{secretary: any; doctorName: string} | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{message:string;onConfirm:()=>void}|null>(null);
 
   const load = () => {
     setLoading(true);
@@ -101,34 +103,42 @@ const SuperadminDoctors: React.FC = () => {
     } catch (err: any) { setMsg({ type: 'err', text: err.response?.data?.error || 'Erreur' }); }
   };
 
-  const handleResetPassword = async (id: string) => {
-    if (!window.confirm('Réinitialiser le mot de passe ?')) return;
-    try {
-      const r = await superadminAPI.resetDoctorPassword(id);
-      alert(`Nouveau mot de passe: ${r.data.data.tempPassword}`);
-    } catch { alert('Erreur'); }
+  const handleResetPassword = (id: string) => {
+    setConfirmDialog({
+      message: 'Réinitialiser le mot de passe de ce médecin ?',
+      onConfirm: async () => {
+        try {
+          const r = await superadminAPI.resetDoctorPassword(id);
+          setMsg({ type: 'ok', text: `Nouveau mot de passe: ${r.data.data.tempPassword}` });
+        } catch { setMsg({ type: 'err', text: 'Erreur lors de la réinitialisation' }); }
+      },
+    });
   };
 
   const toggleStatus = async (id: string, current: boolean) => {
     try {
       await superadminAPI.updateDoctor(id, { isActive: !current });
       load();
-    } catch { alert('Erreur'); }
+    } catch { setMsg({ type: 'err', text: 'Erreur' }); }
   };
 
-  const handleResetSecretaryPassword = async (id: string) => {
-    if (!window.confirm('Réinitialiser le mot de passe de cette secrétaire ?')) return;
-    try {
-      const r = await superadminAPI.resetSecretaryPassword(id);
-      alert(`Nouveau mot de passe: ${r.data.data.tempPassword}`);
-    } catch { alert('Erreur'); }
+  const handleResetSecretaryPassword = (id: string) => {
+    setConfirmDialog({
+      message: 'Réinitialiser le mot de passe de cette secrétaire ?',
+      onConfirm: async () => {
+        try {
+          const r = await superadminAPI.resetSecretaryPassword(id);
+          setMsg({ type: 'ok', text: `Nouveau mot de passe: ${r.data.data.tempPassword}` });
+        } catch { setMsg({ type: 'err', text: 'Erreur lors de la réinitialisation' }); }
+      },
+    });
   };
 
   const toggleSecretaryStatus = async (id: string) => {
     try {
       await superadminAPI.toggleSecretaryStatus(id);
       load();
-    } catch { alert('Erreur'); }
+    } catch { setMsg({ type: 'err', text: 'Erreur' }); }
   };
 
   return (
@@ -228,6 +238,16 @@ const SuperadminDoctors: React.FC = () => {
       )}
       {detailDoctor && <DoctorModal doctor={detailDoctor} onClose={() => setDetailDoctor(null)} />}
       {detailSecretary && <SecretaryModal secretary={detailSecretary.secretary} doctorName={detailSecretary.doctorName} onClose={() => setDetailSecretary(null)} />}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={true}
+          message={confirmDialog.message}
+          confirmLabel="Confirmer"
+          confirmDanger={true}
+          onConfirm={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 };

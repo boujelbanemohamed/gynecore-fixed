@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from "../prisma";
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 
 
 // List all secretaries for the logged-in doctor

@@ -6,6 +6,11 @@ import {
   sendAppointmentConfirmationEmail,
   sendAppointmentCancellationEmail,
 } from '../services/emailService';
+import {
+  sendDoctorEmail,
+  sendPatientEmail,
+} from '../services/notificationService';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 
 const getDocId = async (uid: string) => {
@@ -97,7 +102,7 @@ export const createPatient = async (req: Request, res: Response) => {
     const { firstName, lastName, email, phone, dateOfBirth, address, city, postalCode, country } = req.body;
     if (!dateOfBirth) return res.status(400).json({ success: false, message: 'dateOfBirth requis' });
     if (email) { const ex = await prisma.user.findUnique({ where: { email } }); if (ex) return res.status(400).json({ success: false, message: 'Email deja utilise' }); }
-    const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-4,8).toUpperCase();
+    const tempPassword = crypto.randomBytes(6).toString('hex') + 'A1!';
     const u = await prisma.user.create({
       data: { firstName, lastName, email, phone, role: 'PATIENT', password: await bcrypt.hash(tempPassword, 10), patient: { create: { doctorId: did, dateOfBirth: new Date(dateOfBirth), address, city, postalCode, country } } },
       include: { patient: true },
@@ -185,8 +190,31 @@ export const createAppointment = async (req: Request, res: Response) => {
         status: status || 'SCHEDULED',
         doctorId: did,
       },
-      include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } }
+      include: { patient: { include: { user: { select: { firstName: true, lastName: true, email: true } } } } }
     });
+
+    // Envoi notifications création RDV
+    const doctor = await prisma.user.findUnique({ where: { id: did }, select: { firstName: true, lastName: true, email: true, clinicName: true, address: true } });
+    if (doctor) {
+      const frD = new Date(a.startTime).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const frT = new Date(a.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const ctx = {
+        patientFirstName: a.patient.user.firstName,
+        patientLastName: a.patient.user.lastName,
+        patientEmail: a.patient.user.email || '',
+        doctorFirstName: doctor.firstName,
+        doctorLastName: doctor.lastName,
+        appointmentDate: frD,
+        appointmentTime: frT,
+        appointmentType: a.type,
+        appointmentReason: a.reason || '',
+        clinicName: doctor.clinicName || '',
+        clinicAddress: doctor.address || '',
+      };
+      sendDoctorEmail(did, 'appointment_created_doctor', ctx).catch(() => {});
+      sendPatientEmail(patientId, did, 'appointment_created_patient', ctx).catch(() => {});
+    }
+
     res.json({ success: true, data: a });
   } catch (e: any) { res.status(500).json({ success: false, message: e.message }); }
 };
@@ -205,7 +233,26 @@ export const updateAppointment = async (req: Request, res: Response) => {
     if (reason !== undefined) updateData.reason = reason;
     if (notes !== undefined) updateData.notes = notes;
     if (status) updateData.status = status;
-    const up = await prisma.appointment.update({ where: { id: req.params.id }, data: updateData, include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } } });
+    const up = await prisma.appointment.update({ where: { id: req.params.id }, data: updateData, include: { patient: { include: { user: { select: { firstName: true, lastName: true, email: true } } } } } });
+
+    // Notification modification RDV au médecin
+    const doctor = await prisma.user.findUnique({ where: { id: did }, select: { firstName: true, lastName: true } });
+    if (doctor) {
+      const frD = new Date(up.startTime).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const frT = new Date(up.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      sendDoctorEmail(did, 'appointment_modified_doctor', {
+        patientFirstName: up.patient.user.firstName,
+        patientLastName: up.patient.user.lastName,
+        appointmentDate: frD,
+        appointmentTime: frT,
+        appointmentType: up.type,
+        appointmentReason: up.reason || '',
+        appointmentStatus: up.status,
+        doctorFirstName: doctor.firstName,
+        doctorLastName: doctor.lastName,
+      }).catch(() => {});
+    }
+
     res.json({ success: true, data: up });
   } catch (e: any) { res.status(500).json({ success: false, message: e.message }); }
 };

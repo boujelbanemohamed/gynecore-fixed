@@ -10,13 +10,14 @@ const envLabels: Record<string, string> = {
   SMTP_HOST: 'Serveur SMTP',
   SMTP_PORT: 'Port SMTP',
   SMTP_USER: 'Utilisateur SMTP',
+  SMTP_PASS: 'Mot de passe SMTP',
   SMTP_FROM_EMAIL: 'Email expéditeur',
   SMTP_FROM_NAME: 'Nom expéditeur',
   RATE_LIMIT_WINDOW_MS: 'Fenêtre rate-limit (ms)',
   RATE_LIMIT_MAX: 'Max requêtes rate-limit',
 };
 
-const editableKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME', 'SMTP_USER',
+const editableKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME', 'SMTP_USER', 'SMTP_PASS',
   'CORS_ORIGIN', 'FRONTEND_URL', 'JWT_EXPIRES_IN', 'JWT_PATIENT_EXPIRES_IN',
   'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX'];
 
@@ -26,6 +27,7 @@ const SuperadminSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{type:string;text:string}|null>(null);
+  const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
     superadminAPI.getSettings().then(r => {
@@ -71,12 +73,33 @@ const SuperadminSettings: React.FC = () => {
               <label style={{ minWidth: 200, fontSize: 13, fontWeight: 500, color: '#555' }}>
                 {envLabels[key] || key}
               </label>
-              <input
-                className="form-control"
-                style={{ flex: 1, fontSize: 13 }}
-                value={form[key] ?? ''}
-                onChange={e => setForm({...form, [key]: e.target.value})}
-              />
+              {key === 'SMTP_PASS' ? (
+                <div style={{ flex: 1, display: 'flex', gap: 4 }}>
+                  <input
+                    className="form-control"
+                    style={{ flex: 1, fontSize: 13 }}
+                    type={showPass ? 'text' : 'password'}
+                    value={form[key] ?? ''}
+                    onChange={e => setForm({...form, [key]: e.target.value})}
+                    placeholder="Laisser vide pour conserver l'actuel"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    style={{ whiteSpace: 'nowrap' }}
+                    onClick={() => setShowPass(!showPass)}
+                  >
+                    {showPass ? 'Masquer' : 'Afficher'}
+                  </button>
+                </div>
+              ) : (
+                <input
+                  className="form-control"
+                  style={{ flex: 1, fontSize: 13 }}
+                  value={form[key] ?? ''}
+                  onChange={e => setForm({...form, [key]: e.target.value})}
+                />
+              )}
             </div>
           ))}
         </div>

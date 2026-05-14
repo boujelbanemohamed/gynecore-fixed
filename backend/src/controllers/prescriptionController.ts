@@ -58,13 +58,17 @@ export const createPrescription = async (req: Request, res: Response) => {
 };
 
 
-export const deletePrescription = async (req: any, res: any) => {
+export const deletePrescription = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const doctorId = req.user!.userId;
+    const existing = await prisma.prescription.findFirst({ where: { id, patient: { doctorId } } });
+    if (!existing) return res.status(404).json({ success: false, error: 'Ordonnance non trouvée' });
     await prisma.prescription.delete({ where: { id } });
-    res.json({ message: 'Ordonnance supprimee' });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.json({ success: true, data: { message: 'Ordonnance supprimée' } });
+  } catch (err) {
+    console.error('[deletePrescription] Erreur:', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 };
 

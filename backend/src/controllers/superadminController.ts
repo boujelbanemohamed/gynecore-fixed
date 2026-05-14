@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { Role } from '@prisma/client';
 import { prisma } from '../prisma';
@@ -109,7 +111,7 @@ export const resetDoctorPassword = async (req: Request, res: Response) => {
     const { id } = req.params;
     const doctor = await prisma.user.findFirst({ where: { id, role: Role.DOCTOR } });
     if (!doctor) return res.status(404).json({ success: false, error: 'Medecin non trouve' });
-    const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-4).toUpperCase();
+    const tempPassword = crypto.randomBytes(6).toString('hex') + crypto.randomBytes(3).toString('hex').toUpperCase();
     await prisma.user.update({ where: { id }, data: { password: await bcrypt.hash(tempPassword, 10) } });
     res.json({ success: true, data: { tempPassword } });
   } catch (err) {
@@ -123,7 +125,7 @@ export const resetSecretaryPassword = async (req: Request, res: Response) => {
     const { id } = req.params;
     const secretary = await prisma.user.findFirst({ where: { id, role: Role.SECRETARY } });
     if (!secretary) return res.status(404).json({ success: false, error: 'Secretaire non trouvee' });
-    const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-4).toUpperCase();
+    const tempPassword = crypto.randomBytes(6).toString('hex') + crypto.randomBytes(3).toString('hex').toUpperCase();
     await prisma.user.update({ where: { id }, data: { password: await bcrypt.hash(tempPassword, 10) } });
     res.json({ success: true, data: { tempPassword } });
   } catch (err) {
@@ -197,6 +199,7 @@ export const getSystemSettings = async (_req: Request, res: Response) => {
       SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || '',
       SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'GyneCare',
       SMTP_USER: process.env.SMTP_USER || '',
+      SMTP_PASS: process.env.SMTP_PASS || '',
       RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || '900000',
       RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX || '20',
       FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -228,6 +231,83 @@ export const updateSystemSettings = async (req: Request, res: Response) => {
   } catch (err) {
     console.error('[superadmin updateSystemSettings]', err);
     res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const getSystemHealth = async (_req: Request, res: Response) => {
+  try {
+    const start = Date.now();
+
+    let dbStatus = 'ok';
+    let dbResponseTime = 0;
+    let dbVersion = '';
+    try {
+      const dbStart = Date.now();
+      const result = await prisma.$queryRaw`SELECT version() as version`;
+      dbResponseTime = Date.now() - dbStart;
+      dbVersion = String((result as any[])[0]?.version || '');
+    } catch {
+      dbStatus = 'error';
+    }
+
+    let configStatus = 'ok';
+    let configSize = 0;
+    try {
+      if (fs.existsSync(CONFIG_PATH)) {
+        configSize = fs.statSync(CONFIG_PATH).size;
+      } else {
+        configStatus = 'missing';
+      }
+    } catch {
+      configStatus = 'error';
+    }
+
+    const config = readSystemConfig();
+    const smtpConfigured = !!(config.SMTP_HOST || process.env.SMTP_HOST);
+    const smtpHost = (config.SMTP_HOST || process.env.SMTP_HOST || '').replace(/^(.{3}).*(@.*)$/, '$1***$2');
+
+    const totalResponseTime = Date.now() - start;
+
+    res.json({
+      success: true,
+      data: {
+        checks: {
+          backend: {
+            status: 'ok',
+            uptime: Math.floor(process.uptime()),
+            nodeVersion: process.version,
+            environment: process.env.NODE_ENV || 'development',
+            platform: process.platform,
+            memoryUsage: {
+              heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+              heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+              rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
+            },
+            responseTime: totalResponseTime,
+          },
+          database: {
+            status: dbStatus,
+            responseTime: dbResponseTime,
+            version: dbVersion,
+          },
+          systemConfig: {
+            status: configStatus,
+            path: CONFIG_PATH,
+            size: configSize,
+          },
+          smtp: {
+            status: smtpConfigured ? 'ok' : 'warning',
+            configured: smtpConfigured,
+            host: smtpHost,
+            fromName: config.SMTP_FROM_NAME || process.env.SMTP_FROM_NAME || 'GyneCare',
+          },
+        },
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error('[superadmin health]', err);
+    res.status(500).json({ success: false, error: 'Erreur lors de la vérification de santé' });
   }
 };
 

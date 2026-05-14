@@ -50,7 +50,7 @@ async function main() {
 
   const p1 = await prisma.patient.upsert({
     where: { userId: p1User.id },
-    update: {},
+    update: { doctorId: doctor.id },
     create: {
       userId: p1User.id,
       doctorId: doctor.id,
@@ -79,7 +79,7 @@ async function main() {
 
   const p2 = await prisma.patient.upsert({
     where: { userId: p2User.id },
-    update: {},
+    update: { doctorId: doctor.id },
     create: {
       userId: p2User.id,
       doctorId: doctor.id,

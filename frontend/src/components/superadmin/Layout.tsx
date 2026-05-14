@@ -5,9 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 const nav = [
   { to: '/superadmin/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/superadmin/doctors', label: 'Médecins', icon: '👩‍⚕️' },
+  { to: '/superadmin/templates', label: 'Emails', icon: '📧' },
   { to: '/superadmin/audit-logs', label: 'Audit', icon: '📋' },
   { to: '/superadmin/settings', label: 'Configuration', icon: '⚙️' },
   { to: '/superadmin/profile', label: 'Mon Profil', icon: '👤' },
+  { to: '/superadmin/health', label: 'Santé', icon: '❤️' },
 ];
 
 const SuperadminLayout: React.FC = () => {

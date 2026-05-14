@@ -2,6 +2,10 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doctorAPI } from '../../services/api';
 import ClinicalExamTab from './ClinicalExamTab';
+import Modal from '../../components/shared/Modal';
+import Spinner from '../../components/shared/Spinner';
+import Alert from '../../components/shared/Alert';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 type Tab = 'info'|'consultations'|'exams'|'prescriptions'|'certificates'|'letters'|'appointments'|'documents';
@@ -85,7 +89,8 @@ const PatientDetail: React.FC = () => {
   const [certType, setCertType] = useState<string>('APTITUDE');
   const [certForm, setCertForm] = useState<Record<string,string>>({});
   const [certificates, setCertificates] = useState<any[]>([]);
-  const [confirmAction, setConfirmAction] = useState<{type:string,id:string,label:string}|null>(null);
+  const [alertMsg, setAlertMsg] = useState<{type:'success'|'error'|'warning'|'info';text:string}|null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{message:string;onConfirm:()=>void;danger?:boolean}|null>(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [apptSaving, setApptSaving] = useState(false);
   const [apptForm, setApptForm] = useState({ date: "", startTime: "09:00", endTime: "09:30", type: "FOLLOW_UP", reason: "" });
@@ -109,7 +114,7 @@ const PatientDetail: React.FC = () => {
   const handleUpdatePresc = async () => {
     if (!editingPrescId) return;
     const validMeds = prescMeds.filter(m => m.name.trim());
-    if (validMeds.length === 0) { alert('Ajoutez au moins un médicament'); return; }
+    if (validMeds.length === 0) { setAlertMsg({type:'warning', text:'Ajoutez au moins un médicament'}); return; }
     setPrescSaving(true);
     try {
       await (doctorAPI as any).updatePrescription(editingPrescId, { medications: validMeds, notes: prescNotes || undefined, date: prescDate || undefined });
@@ -117,7 +122,7 @@ const PatientDetail: React.FC = () => {
       setShowPrescModal(false);
       setEditingPrescId(null);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erreur lors de la modification');
+      setAlertMsg({type:'error', text: err.response?.data?.error || 'Erreur lors de la modification'});
     } finally { setPrescSaving(false); }
   };
 
@@ -148,7 +153,7 @@ const PatientDetail: React.FC = () => {
   const uploadFile = async (file: File) => {
     if (!id) return; setUploading(true);
     try { await doctorAPI.uploadDocument(file, id); loadDocuments(); }
-    catch (err: any) { alert(err.response?.data?.error || "Erreur lors de l'upload"); }
+    catch (err: any) { setAlertMsg({type:'error', text: err.response?.data?.error || "Erreur lors de l'upload"}); }
     finally { setUploading(false); }
   };
 
@@ -165,9 +170,10 @@ const PatientDetail: React.FC = () => {
   };
 
   const deleteDoc = async (docId: string) => {
-    if (!confirm('Supprimer ce document ?')) return;
-    try { await doctorAPI.deleteDocument(docId); loadDocuments(); }
-    catch { alert('Erreur lors de la suppression'); }
+    setConfirmDialog({ message: 'Supprimer ce document ?', onConfirm: async () => {
+      try { await doctorAPI.deleteDocument(docId); loadDocuments(); }
+      catch { setAlertMsg({type:'error', text:'Erreur lors de la suppression'}); }
+    }});
   };
 
   const formatFileSize = (bytes: number) => {
@@ -193,12 +199,12 @@ const PatientDetail: React.FC = () => {
   };
 
   const handleCreateAppt = async () => {
-    if (!apptForm.date || !apptForm.startTime || !apptForm.endTime) { alert("Date et heures requises"); return; }
+    if (!apptForm.date || !apptForm.startTime || !apptForm.endTime) { setAlertMsg({type:'warning', text:"Date et heures requises"}); return; }
     setApptSaving(true);
     try {
       const start = new Date(apptForm.date + "T" + apptForm.startTime);
       const end = new Date(apptForm.date + "T" + apptForm.endTime);
-      if (end <= start) { alert("L\u2019heure de fin doit etre apres l\u2019heure de debut"); setApptSaving(false); return; }
+      if (end <= start) { setAlertMsg({type:'warning', text:"L\u2019heure de fin doit etre apres l\u2019heure de debut"}); setApptSaving(false); return; }
       const profRes = await (doctorAPI as any).getProfile();
       await (doctorAPI as any).createAppointment({
         patientId: id,
@@ -210,7 +216,7 @@ const PatientDetail: React.FC = () => {
       });
       load();
       setShowApptModal(false);
-    } catch (err: any) { alert(err.response?.data?.error || "Erreur lors de la creation"); }
+    } catch (err: any) { setAlertMsg({type:'error', text: err.response?.data?.error || "Erreur lors de la creation"}); }
     finally { setApptSaving(false); }
   };
 
@@ -228,12 +234,12 @@ const PatientDetail: React.FC = () => {
 
   const handleCreatePresc = async () => {
     const validMeds = prescMeds.filter(m => m.name.trim());
-    if (validMeds.length === 0) { alert('Ajoutez au moins un médicament'); return; }
+    if (validMeds.length === 0) { setAlertMsg({type:'warning', text:'Ajoutez au moins un médicament'}); return; }
     setPrescSaving(true);
     try {
       await doctorAPI.createPrescription({ patientId: id, medications: validMeds, notes: prescNotes || undefined, date: prescDate || undefined });
       load(); setShowPrescModal(false);
-    } catch (err: any) { alert(err.response?.data?.error || 'Erreur lors de la création'); }
+    } catch (err: any) { setAlertMsg({type:'error', text: err.response?.data?.error || 'Erreur lors de la création'}); }
     finally { setPrescSaving(false); }
   };
 
@@ -353,7 +359,7 @@ const PatientDetail: React.FC = () => {
         '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
         '</div>';
       printInIframe(html);
-    } catch { alert('Erreur lors du chargement'); }
+    } catch { setAlertMsg({type:'error', text:'Erreur lors du chargement'}); }
   };
 
   // -- Medical Letter functions --
@@ -374,19 +380,20 @@ const PatientDetail: React.FC = () => {
   };
 
   const handleSaveLetter = async () => {
-    if (!letterForm.recipient || !letterForm.subject) { alert('Veuillez remplir le destinataire et l\'objet'); return; }
+    if (!letterForm.recipient || !letterForm.subject) { setAlertMsg({type:'warning', text:'Veuillez remplir le destinataire et l\'objet'}); return; }
     try {
       const data = { patientId: id, type: letterForm.type, recipient: letterForm.recipient, subject: letterForm.subject, content: { body: letterForm.body } };
       if (editingLetterId) { await doctorAPI.updateMedicalLetter(editingLetterId, data); }
       else { await doctorAPI.createMedicalLetter(data); }
       setLetterModal(false);
       loadLetters();
-    } catch (e: any) { alert(e.response?.data?.error || 'Erreur'); }
+    } catch (e: any) { setAlertMsg({type:'error', text: e.response?.data?.error || 'Erreur'}); }
   };
 
   const handleDeleteLetter = async (letterId: string) => {
-    if (!confirm('Supprimer ce courrier ?')) return;
-    try { await doctorAPI.deleteMedicalLetter(letterId); loadLetters(); } catch {}
+    setConfirmDialog({ message: 'Supprimer ce courrier ?', onConfirm: async () => {
+      try { await doctorAPI.deleteMedicalLetter(letterId); loadLetters(); } catch {}
+    }});
   };
 
   const handlePrintLetter = async (letterId: string) => {
@@ -447,7 +454,7 @@ const PatientDetail: React.FC = () => {
         '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
         '</div>';
       printInIframe(html);
-    } catch { alert('Erreur lors du chargement'); }
+    } catch { setAlertMsg({type:'error', text:'Erreur lors du chargement'}); }
   };
 
   // -- Certificate functions --
@@ -628,7 +635,7 @@ const getCertFields = (t: string) => {
       loadCertificates();
       setShowCertModal(false);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erreur lors de la creation');
+      setAlertMsg({type:'error', text: err.response?.data?.error || 'Erreur lors de la creation'});
     } finally { setCertSaving(false); }
   };
 
@@ -645,7 +652,7 @@ const getCertFields = (t: string) => {
       setShowCertModal(false);
       setEditingCertId(null);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erreur lors de la modification');
+      setAlertMsg({type:'error', text: err.response?.data?.error || 'Erreur lors de la modification'});
     } finally { setCertSaving(false); }
   };
   const handleEditCert = (cert: any) => {
@@ -658,21 +665,6 @@ const getCertFields = (t: string) => {
     setCertForm(defaults);
     setShowCertModal(true);
   };
-  const handleDeleteCert = async (certId: string) => {
-    try {
-      await (doctorAPI as any).deleteCertificate(certId);
-      loadCertificates();
-    } catch { alert('Erreur lors de la suppression'); }
-  };
-
-  const handleDeletePresc = async (prescId: string) => {
-    try {
-      await (doctorAPI as any).deletePrescription(prescId);
-      load();
-      setConfirmAction(null);
-    } catch { alert('Erreur lors de la suppression'); }
-  };
-
   const loadCertificates = () => {
     if (!id) return;
     (doctorAPI as any).getCertificates({ patientId: id }).then((r: any) => {
@@ -812,7 +804,7 @@ const getCertFields = (t: string) => {
         '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
         '</div>';
       printInIframe(html);
-    } catch { alert('Erreur lors du chargement'); }
+    } catch { setAlertMsg({type:'error', text:'Erreur lors du chargement'}); }
   };
   const openConsultModal = () => {
     setForm(emptyForm(patient));
@@ -842,7 +834,7 @@ const getCertFields = (t: string) => {
       load();
       setShowModal(false);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erreur lors de la sauvegarde');
+      setAlertMsg({type:'error', text: err.response?.data?.error || 'Erreur lors de la sauvegarde'});
     } finally { setSaving(false); }
   };
 
@@ -872,7 +864,7 @@ const getCertFields = (t: string) => {
       const r = await doctorAPI.getPatient(id!);
       setPatient(r.data.data || r.data);
       setShowPatientEdit(false);
-    } catch (e: any) { alert(e.response?.data?.error || 'Erreur'); }
+    } catch (e: any) { setAlertMsg({type:'error', text: e.response?.data?.error || 'Erreur'}); }
     finally { setPatientSaving(false); }
   };
 
@@ -1050,7 +1042,7 @@ const getCertFields = (t: string) => {
                   <span className={`badge ${p.isValid ? 'badge-success' : 'badge-muted'}`}>{p.isValid ? 'Valide' : 'Expirée'}</span>
                   <button className="btn btn-outline btn-sm" onClick={() => handlePrintPresc(p.id)}>🖨 Imprimer</button>
                   <button className="btn btn-outline btn-sm" onClick={() => handleEditPresc(p)}>✏ Modifier</button>
-                  <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#f5c6c3' }} onClick={() => setConfirmAction({type:'prescription',id:p.id,label:'cette ordonnance'})}>Supprimer</button>
+                  <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#f5c6c3' }} onClick={() => setConfirmDialog({ message: 'Supprimer cette ordonnance ?', onConfirm: async () => { try { await (doctorAPI as any).deletePrescription(p.id); load(); } catch { setAlertMsg({type:'error', text:'Erreur lors de la suppression'}); } } })}>Supprimer</button>
                 </div>
               </div>
               <table>
@@ -1098,7 +1090,7 @@ const getCertFields = (t: string) => {
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-outline btn-sm" onClick={() => handlePrintCert(cert.id)}>🖨 Imprimer</button>
                       <button className="btn btn-outline btn-sm" onClick={() => handleEditCert(cert)}>✏ Modifier</button>
-                      <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#f5c6c3' }} onClick={() => setConfirmAction({type:'certificate',id:cert.id,label:'ce certificat'})}>Supprimer</button>
+                      <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#f5c6c3' }} onClick={() => setConfirmDialog({ message: 'Supprimer ce certificat ?', onConfirm: async () => { try { await (doctorAPI as any).deleteCertificate(cert.id); loadCertificates(); } catch { setAlertMsg({type:'error', text:'Erreur lors de la suppression'}); } } })}>Supprimer</button>
                     </div>
                   </div>
                 </div>
@@ -1444,20 +1436,17 @@ const getCertFields = (t: string) => {
 
       {/* ── IMPRESSION CERTIFICAT ── */}
       
-            {/* ── CONFIRMATION MODAL ── */}
-      {confirmAction && (
-        <div className="confirm-overlay">
-          <div className="confirm-box">
-            <p>Souhaitez-vous supprimer {confirmAction.label} ?</p>
-            <div className="confirm-actions">
-              <button className="btn btn-outline" onClick={() => setConfirmAction(null)}>Non</button>
-              <button className="btn btn-primary" style={{ background: 'var(--danger)' }} onClick={() => {
-                if (confirmAction.type === 'certificate') handleDeleteCert(confirmAction.id);
-                else if (confirmAction.type === 'prescription') handleDeletePresc(confirmAction.id);
-              }}>Oui, supprimer</button>
-            </div>
-          </div>
-        </div>
+            {confirmDialog && (
+        <ConfirmDialog
+          isOpen={true}
+          message={confirmDialog.message}
+          onConfirm={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+          onCancel={() => setConfirmDialog(null)}
+          confirmDanger={confirmDialog.danger}
+        />
+      )}
+      {alertMsg && (
+        <Alert type={alertMsg.type} message={alertMsg.text} onClose={() => setAlertMsg(null)} autoClose={4000} />
       )}
 
       {/* ── IMPRESSION ORDONNANCE ── */}
