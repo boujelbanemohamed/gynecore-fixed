@@ -147,6 +147,21 @@ async function main() {
   console.log('🧑‍💼 Assistante: assistante@gynecare.fr / Assistant123!');
   console.log('👤 Patient 1:  camille.bernard@email.fr / Patient123!');
   console.log('👤 Patient 2:  lea.moreau@email.fr / Patient123!');
+
+  // Superadmin
+  await prisma.user.upsert({
+    where: { email: 'admin@gynecare.fr' },
+    update: {},
+    create: {
+      email: 'admin@gynecare.fr',
+      password: await bcrypt.hash('Admin123!', 12),
+      firstName: 'Super',
+      lastName: 'Admin',
+      role: Role.SUPERADMIN,
+    },
+  });
+
+  console.log('🛡️  Superadmin: admin@gynecare.fr / Admin123!');
 }
 
 main()

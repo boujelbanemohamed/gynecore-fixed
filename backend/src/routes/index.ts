@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, authorizeDoctor, authorizePatient, authorizeSecretary } from '../middleware/auth';
+import { authenticate, authorizeDoctor, authorizePatient, authorizeSecretary, authorizeSuperadmin } from '../middleware/auth';
 import * as authController from '../controllers/authController'
 import * as patientController from '../controllers/patientController';
 import * as appointmentController from '../controllers/appointmentController';
@@ -18,6 +18,7 @@ import * as medicalLetterController from '../controllers/medicalLetterController
 import * as unavailableSlotController from '../controllers/unavailableSlotController';
 import * as smtpController from '../controllers/smtpController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
+import * as superadminController from '../controllers/superadminController';
 
 const router = Router();
 
@@ -118,5 +119,16 @@ router.post('/doctor/smtp-config/test', authenticate, authorizeDoctor, smtpContr
 router.delete('/doctor/smtp-config', authenticate, authorizeDoctor, smtpController.deleteSmtpConfig);
 
 router.get('/secretary/unavailable-slots', authenticate, authorizeSecretary, unavailableSlotController.getUnavailableSlots);
+
+// ===== Superadmin routes =====
+router.post('/auth/superadmin/login', authController.loginSuperadmin);
+router.get('/superadmin/dashboard', authenticate, authorizeSuperadmin, superadminController.getDashboard);
+router.get('/superadmin/doctors', authenticate, authorizeSuperadmin, superadminController.getDoctors);
+router.post('/superadmin/doctors', authenticate, authorizeSuperadmin, superadminController.createDoctor);
+router.put('/superadmin/doctors/:id', authenticate, authorizeSuperadmin, superadminController.updateDoctor);
+router.post('/superadmin/doctors/:id/reset-password', authenticate, authorizeSuperadmin, superadminController.resetDoctorPassword);
+router.get('/superadmin/users', authenticate, authorizeSuperadmin, superadminController.getAllUsers);
+router.get('/superadmin/audit-logs', authenticate, authorizeSuperadmin, superadminController.getAllAuditLogs);
+router.get('/superadmin/settings', authenticate, authorizeSuperadmin, superadminController.getSystemSettings);
 
 export default router;

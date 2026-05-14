@@ -12,6 +12,7 @@ enum Role {
   ASSISTANT
   SECRETARY
   PATIENT
+  SUPERADMIN
 }
 
 enum AppointmentStatus {

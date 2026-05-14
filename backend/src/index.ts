@@ -34,6 +34,7 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/patient/login', authLimiter);
+app.use('/api/auth/superadmin/login', authLimiter);
 
 // ── Body parsing ──────────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));

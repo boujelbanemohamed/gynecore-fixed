@@ -62,6 +62,9 @@ const PatientDetail: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPatientEdit, setShowPatientEdit] = useState(false);
+  const [patientSaving, setPatientSaving] = useState(false);
+  const [patientForm, setPatientForm] = useState<any>({});
   const [showPrescModal, setShowPrescModal] = useState(false);
   const [prescSaving, setPrescSaving] = useState(false);
   const [prescMeds, setPrescMeds] = useState([{ name: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
@@ -843,6 +846,36 @@ const getCertFields = (t: string) => {
     } finally { setSaving(false); }
   };
 
+
+  const openPatientEdit = () => {
+    setPatientForm({
+      firstName: u.firstName, lastName: u.lastName, email: u.email, phone: u.phone || '',
+      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().slice(0, 10) : '',
+      address: patient.address || '', city: patient.city || '', postalCode: patient.postalCode || '', country: patient.country || '',
+      bloodType: patient.bloodType || '', allergies: patient.allergies || '', chronicDiseases: patient.chronicDiseases || '',
+      familyHistory: patient.familyHistory || '', currentMedications: patient.currentMedications || '',
+      lastMenstrualPeriod: patient.lastMenstrualPeriod ? new Date(patient.lastMenstrualPeriod).toISOString().slice(0, 10) : '',
+      contraceptionMethod: patient.contraceptionMethod || '',
+      numberOfPregnancies: patient.numberOfPregnancies || '', numberOfDeliveries: patient.numberOfDeliveries || '',
+      emergencyContact: patient.emergencyContact || '', emergencyPhone: patient.emergencyPhone || '',
+    });
+    setShowPatientEdit(true);
+  };
+
+  const savePatient = async () => {
+    setPatientSaving(true);
+    try {
+      const data: any = { ...patientForm };
+      if (!data.dateOfBirth) delete data.dateOfBirth;
+      if (!data.lastMenstrualPeriod) data.lastMenstrualPeriod = null;
+      await doctorAPI.updatePatient(id!, data);
+      const r = await doctorAPI.getPatient(id!);
+      setPatient(r.data.data || r.data);
+      setShowPatientEdit(false);
+    } catch (e: any) { alert(e.response?.data?.error || 'Erreur'); }
+    finally { setPatientSaving(false); }
+  };
+
   const upd = (patch: any) => setForm(prev => ({ ...prev, ...patch }));
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -889,11 +922,60 @@ const getCertFields = (t: string) => {
         ))}
       </div>
 
-      {/* ── TAB: Informations ── */}
+      {/* Modal Edit Patient */}
+      {showPatientEdit && (
+        <div className="modal-overlay" onClick={() => setShowPatientEdit(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
+            <div className="modal-header">
+              <span className="modal-title">Modifier la fiche patiente</span>
+              <button className="btn-close" onClick={() => setShowPatientEdit(false)}>x</button>
+            </div>
+            <div className="modal-body">
+              <h4 className="section-title mb-12">Informations personnelles</h4>
+              <div className="form-grid-2">
+                <div className="form-group"><label className="form-label">Prenom</label><input className="form-control" value={patientForm.firstName || ''} onChange={e => setPatientForm({...patientForm, firstName: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Nom</label><input className="form-control" value={patientForm.lastName || ''} onChange={e => setPatientForm({...patientForm, lastName: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Email</label><input className="form-control" type="email" value={patientForm.email || ''} onChange={e => setPatientForm({...patientForm, email: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Telephone</label><input className="form-control" value={patientForm.phone || ''} onChange={e => setPatientForm({...patientForm, phone: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Date de naissance</label><input className="form-control" type="date" value={patientForm.dateOfBirth || ''} onChange={e => setPatientForm({...patientForm, dateOfBirth: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Groupe sanguin</label><input className="form-control" value={patientForm.bloodType || ''} onChange={e => setPatientForm({...patientForm, bloodType: e.target.value})} /></div>
+              </div>
+              <div className="form-grid-2">
+                <div className="form-group"><label className="form-label">Adresse</label><input className="form-control" value={patientForm.address || ''} onChange={e => setPatientForm({...patientForm, address: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Ville</label><input className="form-control" value={patientForm.city || ''} onChange={e => setPatientForm({...patientForm, city: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Code postal</label><input className="form-control" value={patientForm.postalCode || ''} onChange={e => setPatientForm({...patientForm, postalCode: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Pays</label><input className="form-control" value={patientForm.country || ''} onChange={e => setPatientForm({...patientForm, country: e.target.value})} /></div>
+              </div>
+              <h4 className="section-title mb-12" style={{ marginTop: 20 }}>Antecedents medicaux</h4>
+              <div className="form-grid-2">
+                <div className="form-group"><label className="form-label">Allergies</label><input className="form-control" value={patientForm.allergies || ''} onChange={e => setPatientForm({...patientForm, allergies: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Maladies chroniques</label><input className="form-control" value={patientForm.chronicDiseases || ''} onChange={e => setPatientForm({...patientForm, chronicDiseases: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Antecedents familiaux</label><input className="form-control" value={patientForm.familyHistory || ''} onChange={e => setPatientForm({...patientForm, familyHistory: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Medicaments actuels</label><input className="form-control" value={patientForm.currentMedications || ''} onChange={e => setPatientForm({...patientForm, currentMedications: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Dernieres regles</label><input className="form-control" type="date" value={patientForm.lastMenstrualPeriod || ''} onChange={e => setPatientForm({...patientForm, lastMenstrualPeriod: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Contraception</label><input className="form-control" value={patientForm.contraceptionMethod || ''} onChange={e => setPatientForm({...patientForm, contraceptionMethod: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Grossesses</label><input className="form-control" type="number" value={patientForm.numberOfPregnancies || ''} onChange={e => setPatientForm({...patientForm, numberOfPregnancies: parseInt(e.target.value) || 0})} /></div>
+                <div className="form-group"><label className="form-label">Accouchements</label><input className="form-control" type="number" value={patientForm.numberOfDeliveries || ''} onChange={e => setPatientForm({...patientForm, numberOfDeliveries: parseInt(e.target.value) || 0})} /></div>
+              </div>
+              <h4 className="section-title mb-12" style={{ marginTop: 20 }}>Contact urgence</h4>
+              <div className="form-grid-2">
+                <div className="form-group"><label className="form-label">Contact urgence</label><input className="form-control" value={patientForm.emergencyContact || ''} onChange={e => setPatientForm({...patientForm, emergencyContact: e.target.value})} /></div>
+                <div className="form-group"><label className="form-label">Tel. urgence</label><input className="form-control" value={patientForm.emergencyPhone || ''} onChange={e => setPatientForm({...patientForm, emergencyPhone: e.target.value})} /></div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowPatientEdit(false)}>Annuler</button>
+              <button className="btn btn-primary" disabled={patientSaving} onClick={savePatient}>{patientSaving ? 'Enregistrement...' : 'Enregistrer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: Informations */}
       {tab === 'info' && (
         <div className="grid-2">
           <div className="card">
-            <div className="card-header"><span className="card-title">Informations personnelles</span></div>
+            <div className="card-header"><span className="card-title">Informations personnelles</span><button className="btn btn-outline btn-sm" onClick={openPatientEdit}>Modifier</button></div>
             {[
               ['Nom complet', `${u.firstName} ${u.lastName}`],
               ['Email', u.email],
