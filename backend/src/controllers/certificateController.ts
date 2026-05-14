@@ -11,7 +11,16 @@ const createCertificateSchema = z.object({
 export const getCertificates = async (req: Request, res: Response) => {
   try {
     const patientId = req.query.patientId as string;
-    const where = patientId ? { patientId } : {};
+    const doctorId = req.user!.userId;
+    const patients = await prisma.patient.findMany({ where: { doctorId }, select: { id: true } });
+    const patientIds = patients.map(p => p.id);
+    const where: any = {};
+    if (patientId) {
+      if (!patientIds.includes(patientId)) return res.status(403).json({ success: false, error: 'Acces refuse' });
+      where.patientId = patientId;
+    } else {
+      where.patientId = { in: patientIds };
+    }
     const certificates = await prisma.certificate.findMany({
       where,
       include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
@@ -27,11 +36,14 @@ export const getCertificates = async (req: Request, res: Response) => {
 export const getCertificateById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const doctorId = req.user!.userId;
     const certificate = await prisma.certificate.findUnique({
       where: { id },
       include: { patient: { include: { user: { select: { firstName: true, lastName: true, email: true, phone: true } } } } },
     });
     if (!certificate) return res.status(404).json({ success: false, error: 'Certificat non trouve' });
+    const patient = await prisma.patient.findFirst({ where: { id: certificate.patientId, doctorId } });
+    if (!patient) return res.status(403).json({ success: false, error: 'Acces refuse' });
     return res.json({ success: true, data: certificate });
   } catch (err) {
     console.error('[getCertificateById] Erreur:', err);
@@ -41,7 +53,10 @@ export const getCertificateById = async (req: Request, res: Response) => {
 
 export const createCertificate = async (req: Request, res: Response) => {
   try {
+    const doctorId = req.user!.userId;
     const data = createCertificateSchema.parse(req.body);
+    const patient = await prisma.patient.findFirst({ where: { id: data.patientId, doctorId } });
+    if (!patient) return res.status(403).json({ success: false, error: 'Patient non trouve ou acces refuse' });
     const certificate = await prisma.certificate.create({
       data: { patientId: data.patientId, type: data.type, content: (data.content || {}) as any },
       include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
@@ -57,6 +72,11 @@ export const createCertificate = async (req: Request, res: Response) => {
 export const deleteCertificate = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const doctorId = req.user!.userId;
+    const cert = await prisma.certificate.findUnique({ where: { id } });
+    if (!cert) return res.status(404).json({ success: false, error: 'Certificat non trouve' });
+    const patient = await prisma.patient.findFirst({ where: { id: cert.patientId, doctorId } });
+    if (!patient) return res.status(403).json({ success: false, error: 'Acces refuse' });
     await prisma.certificate.delete({ where: { id } });
     return res.json({ success: true, data: { message: 'Certificat supprime' } });
   } catch (err) {
