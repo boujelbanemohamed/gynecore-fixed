@@ -21,8 +21,8 @@ const PasswordChange: React.FC = () => {
   };
 
   return (
-    <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #e0e0e0' }}>
-      <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 16 }}>Changer le mot de passe</h3>
+    <div className="section-sep">
+      <h3 className="fs-16 fw-500 mb-16">Changer le mot de passe</h3>
       <div style={{ maxWidth: 400 }}>
         <div className="form-group">
           <label className="form-label">Ancien mot de passe</label>
@@ -40,9 +40,7 @@ const PasswordChange: React.FC = () => {
             value={pw.confirm} onChange={e => setPw({ ...pw, confirm: e.target.value })} />
         </div>
         {msg && (
-          <div style={{ padding: 8, borderRadius: 6, marginBottom: 12, fontSize: 14,
-            background: msg.type === 'ok' ? '#e8f5e9' : '#ffebee',
-            color: msg.type === 'ok' ? '#2e7d32' : '#c62828' }}>{msg.text}</div>
+          <div className={`alert ${msg.type === 'ok' ? 'badge-success' : 'alert-error'}`} style={{ padding: 8, borderRadius: 6, marginBottom: 12, fontSize: 14 }}>{msg.text}</div>
         )}
         <button type="button" className="btn btn-primary btn-sm" disabled={loading} onClick={handleSubmit}>
           {loading ? 'Mise a jour...' : 'Changer le mot de passe'}

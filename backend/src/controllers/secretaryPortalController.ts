@@ -61,11 +61,16 @@ export const getPatients = async (req: Request, res: Response) => {
       { user: { lastName: { contains: s, mode: 'insensitive' } } },
       { user: { phone: { contains: s } } },
     ];
-    const patients = await prisma.patient.findMany({
-      where, include: { user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json({ success: true, data: { patients, total: patients.length } });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const [patients, total] = await Promise.all([
+      prisma.patient.findMany({
+        where, include: { user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+        orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit,
+      }),
+      prisma.patient.count({ where }),
+    ]);
+    res.json({ success: true, data: { patients, total, page, totalPages: Math.ceil(total / limit) } });
   } catch (e: any) { res.status(500).json({ success: false, message: e.message }); }
 };
 
@@ -125,12 +130,18 @@ export const updatePatientAdmin = async (req: Request, res: Response) => {
 export const getConsultations = async (req: Request, res: Response) => {
   try {
     const did = await getDocId((req as any).user.userId);
-    const c = await prisma.consultation.findMany({
-      where: { patient: { doctorId: did } },
-      include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
-      orderBy: { date: 'desc' }, take: 100,
-    });
-    res.json({ success: true, data: { consultations: c } });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const where = { patient: { doctorId: did } };
+    const [c, total] = await Promise.all([
+      prisma.consultation.findMany({
+        where,
+        include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } },
+        orderBy: { date: 'desc' }, skip: (page - 1) * limit, take: limit,
+      }),
+      prisma.consultation.count({ where }),
+    ]);
+    res.json({ success: true, data: { consultations: c, total, page, totalPages: Math.ceil(total / limit) } });
   } catch (e: any) { res.status(500).json({ success: false, message: e.message }); }
 };
 
@@ -140,10 +151,16 @@ export const getAppointments = async (req: Request, res: Response) => {
     const { startDate, endDate } = req.query;
     const where: any = { doctorId: did };
     if (startDate && endDate) where.startTime = { gte: new Date(startDate as string), lte: new Date(endDate as string) };
-    const a = await prisma.appointment.findMany({
-      where, include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } }, orderBy: { startTime: 'asc' },
-    });
-    res.json({ success: true, data: { appointments: a } });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const [a, total] = await Promise.all([
+      prisma.appointment.findMany({
+        where, include: { patient: { include: { user: { select: { firstName: true, lastName: true } } } } }, orderBy: { startTime: 'asc' },
+        skip: (page - 1) * limit, take: limit,
+      }),
+      prisma.appointment.count({ where }),
+    ]);
+    res.json({ success: true, data: { appointments: a, total, page, totalPages: Math.ceil(total / limit) } });
   } catch (e: any) { res.status(500).json({ success: false, message: e.message }); }
 };
 
