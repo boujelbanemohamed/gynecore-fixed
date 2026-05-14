@@ -27,6 +27,8 @@ import SecretaryPatients from './pages/secretary/Patients';
 import SecretaryConsultations from './pages/secretary/Consultations';
 import SecretaryCalendar from './pages/secretary/Calendar';
 import SecretaryProfile from './pages/secretary/Profile';
+import ForgotPassword from './pages/shared/ForgotPassword';
+import ResetPassword from './pages/shared/ResetPassword';
 
 const App: React.FC = () => (
   <AuthProvider>
@@ -37,6 +39,8 @@ const App: React.FC = () => (
           <Route path="/login" element={<DoctorLogin />} />
           <Route path="/patient/login" element={<PatientLogin />} />
           <Route path="/secretary/login" element={<SecretaryLogin />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Route>
         <Route element={<DoctorRoute />}>
           <Route element={<DoctorLayout />}>

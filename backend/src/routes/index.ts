@@ -16,6 +16,7 @@ import * as certificateController from '../controllers/certificateController';
 import * as clinicalExamController from '../controllers/clinicalExamController';
 import * as medicalLetterController from '../controllers/medicalLetterController';
 import * as unavailableSlotController from '../controllers/unavailableSlotController';
+import * as smtpController from '../controllers/smtpController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
 
 const router = Router();
@@ -79,7 +80,7 @@ router.delete('/doctor/medical-letters/:id', authenticate, authorizeDoctor, medi
 router.get('/doctor/profile', authenticate, authorizeDoctor, profileController.getProfile);
 router.put('/doctor/profile', authenticate, authorizeDoctor, profileController.updateProfile);
 router.post('/doctor/profile/logo', authenticate, authorizeDoctor, uploadLogo.single('file'), profileController.uploadLogo);
-
+router.put('/doctor/profile/password', authenticate, authorizeDoctor, profileController.changePassword);
 router.post('/doctor/documents', authenticate, authorizeDoctor, uploadDocument.single('file'), documentController.uploadDocument);
 router.get('/doctor/documents/:patientId', authenticate, authorizeDoctor, documentController.getPatientDocuments);
 router.delete('/doctor/documents/:documentId', authenticate, authorizeDoctor, documentController.deleteDocument);
@@ -109,6 +110,12 @@ router.delete('/secretary/appointments/:id', authenticate, authorizeSecretary, s
 router.get('/doctor/unavailable-slots', authenticate, authorizeDoctor, unavailableSlotController.getUnavailableSlots);
 router.post('/doctor/unavailable-slots', authenticate, authorizeDoctor, unavailableSlotController.createUnavailableSlot);
 router.delete('/doctor/unavailable-slots/:id', authenticate, authorizeDoctor, unavailableSlotController.deleteUnavailableSlot);
+
+// SMTP Configuration
+router.get('/doctor/smtp-config', authenticate, authorizeDoctor, smtpController.getSmtpConfig);
+router.post('/doctor/smtp-config', authenticate, authorizeDoctor, smtpController.saveSmtpConfig);
+router.post('/doctor/smtp-config/test', authenticate, authorizeDoctor, smtpController.testSmtpConnection);
+router.delete('/doctor/smtp-config', authenticate, authorizeDoctor, smtpController.deleteSmtpConfig);
 
 router.get('/secretary/unavailable-slots', authenticate, authorizeSecretary, unavailableSlotController.getUnavailableSlots);
 

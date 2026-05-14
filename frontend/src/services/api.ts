@@ -80,6 +80,11 @@ export const doctorAPI = {
   createClinicalExam: (data: Record<string, unknown>) => api.post('/doctor/clinical-exams', data),
   updateClinicalExam: (id: string, data: Record<string, unknown>) => api.put(`/doctor/clinical-exams/${id}`, data),
   deleteClinicalExam: (id: string) => api.delete(`/doctor/clinical-exams/${id}`),
+  getSmtpConfig: () => api.get('/doctor/smtp-config'),
+  saveSmtpConfig: (data: any) => api.post('/doctor/smtp-config', data),
+  testSmtpConnection: (data?: any) => api.post('/doctor/smtp-config/test', data),
+  deleteSmtpConfig: () => api.delete('/doctor/smtp-config'),
+  changePassword: (data: { currentPassword: string; newPassword: string }) => api.put('/doctor/profile/password', data),
   uploadLogo: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);

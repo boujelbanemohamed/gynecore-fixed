@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { z } from "zod";
 import { prisma } from "../prisma";
+import { sendPasswordResetEmail } from "../services/emailService";
 
 const forgotSchema = z.object({
   email: z.string().email("Email invalide"),
@@ -36,9 +37,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
       data: { userId: user.id, token: hashedToken, expiresAt },
     });
 
-    // En production : envoyer un email ici
-    // Pour le moment : afficher le token dans la console
-    console.log(`[RESET] Token pour ${email}: ${resetToken}`);
+    // Envoi de l'email de reinitialisation via SMTP
+    try {
+      await sendPasswordResetEmail(user.email, resetToken);
+    } catch (emailErr) {
+      console.error("[forgotPassword] Erreur envoi email, fallback console:", emailErr);
+      console.log(`[RESET-FALLBACK] Token pour ${email}: ${resetToken}`);
+    }
 
     return res.json({ success: true, message: "Si un compte existe avec cet email, un lien de reinitialisation a ete envoye." });
   } catch (err) {

@@ -75,6 +75,8 @@ model User {
   secretary       User?    @relation("DoctorSecretary", fields: [doctorId], references: [id])
   secretaries    User[]   @relation("DoctorSecretary")
 
+  smtpConfigs      SmtpConfig[]
+
   @@map("users")
 }
 
@@ -289,4 +291,22 @@ model ClinicalExam {
   updatedAt            DateTime @updatedAt
 
   @@map("clinical_exams")
+}
+
+model SmtpConfig {
+  id            String   @id @default(uuid())
+  doctorId      String   @unique
+  doctor        User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  smtpHost      String   @default("smtp.gmail.com")
+  smtpPort      Int      @default(587)
+  smtpSecure    Boolean  @default(false)
+  smtpUser      String   @default("")
+  smtpPass      String   @default("")
+  smtpFromName  String   @default("GyneCare")
+  smtpFromEmail String   @default("")
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("smtp_configs")
 }

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { doctorAPI } from '../../services/api';
+import PasswordChange from './PasswordChange'
+import SmtpSettings from './SmtpSettings';
 
 const IMG_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -10,6 +12,9 @@ const Settings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", newPw: "", confirm: "" });
+  const [pwMsg, setPwMsg] = useState(null);
+  const [pwLoading, setPwLoading] = useState(false);
   const [form, setForm] = useState({
     firstName: '', lastName: '', phone: '', email: '',
     specialization: '', licenseNumber: '', rppsNumber: '',
@@ -38,7 +43,7 @@ const Settings: React.FC = () => {
     setSuccess(false);
     try {
       await doctorAPI.updateProfile({
-        firstName: form.firstName, lastName: form.lastName, phone: form.phone,
+        email: form.email, firstName: form.firstName, lastName: form.lastName, phone: form.phone,
         specialization: form.specialization, licenseNumber: form.licenseNumber,
         rppsNumber: form.rppsNumber, clinicName: form.clinicName,
         address: form.address, city: form.city, postalCode: form.postalCode,
@@ -81,7 +86,7 @@ const Settings: React.FC = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Email</label>
-              <input className="form-control" value={form.email} readOnly style={{ background: '#f5f5f5' }} />
+              <input className="form-control" value={form.email} onChange={e => update({ email: e.target.value })} />
             </div>
             <div className="form-group">
               <label className="form-label">Telephone</label>
@@ -178,6 +183,11 @@ const Settings: React.FC = () => {
           {success && <span style={{ color: '#28a745', fontSize: 14, fontWeight: 500 }}>Profil mis a jour avec succes !</span>}
         </div>
       </form>
+
+      <div style={{ marginTop: 24 }}>
+        <PasswordChange />
+        <SmtpSettings />
+      </div>
     </div>
   );
 };

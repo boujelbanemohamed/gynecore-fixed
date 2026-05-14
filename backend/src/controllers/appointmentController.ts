@@ -3,6 +3,10 @@ import { AppointmentStatus, ConsultationType } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../prisma';
 import { checkSlotAvailability } from './unavailableSlotController';
+import {
+  sendAppointmentConfirmationEmail,
+  sendAppointmentCancellationEmail,
+} from '../services/emailService';
 
 // ── Schemas de validation ──────────────────────────────────────────
 
@@ -119,7 +123,13 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const { status } = updateStatusSchema.parse(req.body);
 
     // Vérifie que le RDV appartient à ce médecin
-    const current = await prisma.appointment.findFirst({ where: { id, doctorId } });
+    const current = await prisma.appointment.findFirst({
+      where: { id, doctorId },
+      include: {
+        patient: { include: { user: { select: { firstName: true, lastName: true, email: true } } } },
+        doctor: { select: { firstName: true, lastName: true, clinicName: true, address: true } },
+      },
+    });
     if (!current) return res.status(404).json({ success: false, error: 'Rendez-vous non trouvé' });
 
     const allowed = ALLOWED_TRANSITIONS[current.status];
@@ -131,6 +141,38 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     }
 
     const appointment = await prisma.appointment.update({ where: { id }, data: { status } });
+
+    // Envoi d'email alerte selon le nouveau statut
+    const patientEmail = current.patient?.user?.email;
+    if (patientEmail) {
+      try {
+        if (status === AppointmentStatus.CONFIRMED) {
+          await sendAppointmentConfirmationEmail(doctorId, patientEmail, {
+            patientFirstName: current.patient.user.firstName,
+            patientLastName: current.patient.user.lastName,
+            doctorFirstName: current.doctor.firstName,
+            doctorLastName: current.doctor.lastName,
+            date: formatDateFr(new Date(current.startTime)),
+            time: formatTimeFr(new Date(current.startTime)),
+            type: current.type,
+            clinicName: current.doctor.clinicName,
+            clinicAddress: current.doctor.address,
+          });
+        } else if (status === AppointmentStatus.CANCELLED) {
+          await sendAppointmentCancellationEmail(doctorId, patientEmail, {
+            patientFirstName: current.patient.user.firstName,
+            patientLastName: current.patient.user.lastName,
+            doctorFirstName: current.doctor.firstName,
+            doctorLastName: current.doctor.lastName,
+            date: formatDateFr(new Date(current.startTime)),
+            time: formatTimeFr(new Date(current.startTime)),
+          });
+        }
+      } catch (emailErr) {
+        console.error('[updateAppointmentStatus] Erreur envoi email alerte:', emailErr);
+      }
+    }
+
     return res.json({ success: true, data: appointment });
   } catch (err) {
     if (err instanceof z.ZodError) {

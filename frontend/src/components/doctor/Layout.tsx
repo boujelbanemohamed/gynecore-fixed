@@ -10,11 +10,13 @@ const navItems = [
   { to: '/secretaries', icon: '👤', label: 'Secrétaires' },
   { to: '/unavailable-slots', icon: '🚫', label: 'Indisponibilités' },
   { to: '/settings', icon: '⚙', label: 'Paramètres' },
+  { to: '/audit-logs', icon: '📊', label: "Journal d'audit" },
 ];
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Tableau de bord', '/patients': 'Patientes',
   '/consultations': 'Consultations', '/calendar': 'Planning', '/settings': 'Paramètres',
+  '/audit-logs': "Journal d'audit",
 };
 
 const DoctorLayout: React.FC = () => {

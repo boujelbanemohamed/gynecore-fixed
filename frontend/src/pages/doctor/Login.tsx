@@ -45,6 +45,9 @@ const DoctorLogin: React.FC = () => {
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
+          <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <Link to="/forgot-password" style={{ color: '#e91e63', fontSize: 14, textDecoration: 'none' }}>Mot de passe oublié ?</Link>
+          </div>
           <div className="login-divider">ou</div>
           <div className="login-switch">Vous êtes patient ? <Link to="/patient/login">Portail patient →</Link> | Vous êtes secrétaire ? <Link to="/secretary/login">Portail secrétaire →</Link></div>
         </div>

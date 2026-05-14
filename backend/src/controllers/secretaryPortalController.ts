@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { checkSlotAvailability } from './unavailableSlotController';
+import {
+  sendAppointmentConfirmationEmail,
+  sendAppointmentCancellationEmail,
+} from '../services/emailService';
 import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
@@ -193,7 +197,45 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const did = await getDocId((req as any).user.userId);
     const a = await prisma.appointment.findFirst({ where: { id: req.params.id, doctorId: did } });
     if (!a) return res.status(404).json({ success: false, message: 'Rendez-vous non trouve' });
-    const up = await prisma.appointment.update({ where: { id: req.params.id }, data: { status: req.body.status } });
+    const newStatus = req.body.status as string;
+    const up = await prisma.appointment.update({ where: { id: req.params.id }, data: { status: newStatus } });
+
+    // Envoi d'email alerte au patient
+    const patientData = await prisma.appointment.findUnique({
+      where: { id: req.params.id },
+      include: {
+        patient: { include: { user: { select: { firstName: true, lastName: true, email: true } } } },
+        doctor: { select: { firstName: true, lastName: true, clinicName: true, address: true } },
+      },
+    });
+    const patientEmail = patientData?.patient?.user?.email;
+    if (patientEmail && patientData) {
+      try {
+        const frDate = new Date(patientData.startTime).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const frTime = new Date(patientData.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        if (newStatus === 'CONFIRMED') {
+          await sendAppointmentConfirmationEmail(patientData.doctorId, patientEmail, {
+            patientFirstName: patientData.patient.user.firstName,
+            patientLastName: patientData.patient.user.lastName,
+            doctorFirstName: patientData.doctor.firstName,
+            doctorLastName: patientData.doctor.lastName,
+            date: frDate, time: frTime, type: patientData.type,
+            clinicName: patientData.doctor.clinicName, clinicAddress: patientData.doctor.address,
+          });
+        } else if (newStatus === 'CANCELLED') {
+          await sendAppointmentCancellationEmail(patientData.doctorId, patientEmail, {
+            patientFirstName: patientData.patient.user.firstName,
+            patientLastName: patientData.patient.user.lastName,
+            doctorFirstName: patientData.doctor.firstName,
+            doctorLastName: patientData.doctor.lastName,
+            date: frDate, time: frTime,
+          });
+        }
+      } catch (emailErr) {
+        console.error('[sec.updateAppointmentStatus] Erreur email:', emailErr);
+      }
+    }
+
     res.json({ success: true, data: up });
   } catch (e: any) { res.status(500).json({ success: false, message: e.message }); }
 };

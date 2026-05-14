@@ -1,0 +1,11 @@
+{
+  "name": "gynecare-selenium-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node runner.mjs",
+    "test:headless": "HEADLESS=1 node runner.mjs"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.0.0"
+  }
+}
