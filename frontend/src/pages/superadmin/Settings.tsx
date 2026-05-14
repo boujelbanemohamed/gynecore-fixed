@@ -1,13 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { superadminAPI } from '../../services/api';
 
+const envLabels: Record<string, string> = {
+  NODE_ENV: 'Environnement',
+  CORS_ORIGIN: 'Origine CORS',
+  FRONTEND_URL: 'URL Frontend',
+  JWT_EXPIRES_IN: 'Expiration JWT (médecins)',
+  JWT_PATIENT_EXPIRES_IN: 'Expiration JWT (patients)',
+  SMTP_HOST: 'Serveur SMTP',
+  SMTP_PORT: 'Port SMTP',
+  SMTP_USER: 'Utilisateur SMTP',
+  SMTP_FROM_EMAIL: 'Email expéditeur',
+  SMTP_FROM_NAME: 'Nom expéditeur',
+  RATE_LIMIT_WINDOW_MS: 'Fenêtre rate-limit (ms)',
+  RATE_LIMIT_MAX: 'Max requêtes rate-limit',
+};
+
+const editableKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME', 'SMTP_USER',
+  'CORS_ORIGIN', 'FRONTEND_URL', 'JWT_EXPIRES_IN', 'JWT_PATIENT_EXPIRES_IN',
+  'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX'];
+
 const SuperadminSettings: React.FC = () => {
   const [settings, setSettings] = useState<any>(null);
+  const [form, setForm] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{type:string;text:string}|null>(null);
 
   useEffect(() => {
-    superadminAPI.getSettings().then(r => setSettings(r.data.data)).catch(console.error).finally(() => setLoading(false));
+    superadminAPI.getSettings().then(r => {
+      setSettings(r.data.data);
+      const env = r.data.data.env || {};
+      const init: Record<string, string> = {};
+      for (const k of editableKeys) if (env[k] !== undefined) init[k] = env[k];
+      setForm(init);
+    }).catch(console.error).finally(() => setLoading(false));
   }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      await superadminAPI.updateSettings({ settings: form });
+      setMsg({ type: 'ok', text: 'Configuration sauvegardée. Redémarrez le serveur pour appliquer.' });
+    } catch (err: any) {
+      setMsg({ type: 'err', text: err.response?.data?.error || 'Erreur' });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) return <p>Chargement...</p>;
 
@@ -15,18 +56,33 @@ const SuperadminSettings: React.FC = () => {
     <div>
       <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 20 }}>Configuration système</h2>
 
+      {msg && (
+        <div className={`alert ${msg.type === 'ok' ? 'badge-success' : 'alert-error'}`}
+          style={{ padding: 10, borderRadius: 6, marginBottom: 16, fontSize: 13 }}>
+          {msg.text}
+        </div>
+      )}
+
       <div className="card" style={{ padding: 20, marginBottom: 16 }}>
         <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Variables d'environnement</h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <tbody>
-            {settings?.env && Object.entries(settings.env).map(([key, val]) => (
-              <tr key={key} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '6px 12px', fontWeight: 500, width: 200 }}>{key}</td>
-                <td style={{ padding: '6px 12px', color: '#666' }}>{String(val || '-')}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {editableKeys.map((key) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <label style={{ minWidth: 200, fontSize: 13, fontWeight: 500, color: '#555' }}>
+                {envLabels[key] || key}
+              </label>
+              <input
+                className="form-control"
+                style={{ flex: 1, fontSize: 13 }}
+                value={form[key] ?? ''}
+                onChange={e => setForm({...form, [key]: e.target.value})}
+              />
+            </div>
+          ))}
+        </div>
+        <button className="btn btn-primary btn-sm" style={{ marginTop: 16 }} onClick={handleSave} disabled={saving}>
+          {saving ? 'Sauvegarde...' : 'Sauvegarder la configuration'}
+        </button>
       </div>
 
       <div className="card" style={{ padding: 20 }}>

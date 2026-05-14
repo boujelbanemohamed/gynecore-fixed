@@ -115,6 +115,11 @@ export const superadminAPI = {
   getUsers: () => api.get('/superadmin/users'),
   getAuditLogs: (params?: any) => api.get('/superadmin/audit-logs', { params }),
   getSettings: () => api.get('/superadmin/settings'),
+  updateSettings: (data: any) => api.put('/superadmin/settings', data),
+  updateProfile: (data: any) => api.put('/superadmin/profile', data),
+  changePassword: (data: any) => api.put('/superadmin/password', data),
+  resetSecretaryPassword: (id: string) => api.post(`/superadmin/secretaries/${id}/reset-password`),
+  toggleSecretaryStatus: (id: string) => api.patch(`/superadmin/secretaries/${id}/toggle-status`),
 };
 
 export const secretaryAPI = {

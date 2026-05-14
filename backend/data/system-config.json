@@ -1,0 +1,4 @@
+{
+  "SMTP_HOST": "smtp.gmail.com",
+  "RATE_LIMIT_MAX": "1000"
+}

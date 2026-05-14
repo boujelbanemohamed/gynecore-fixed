@@ -35,6 +35,7 @@ import SuperadminDashboard from './pages/superadmin/Dashboard';
 import SuperadminDoctors from './pages/superadmin/Doctors';
 import SuperadminAuditLogs from './pages/superadmin/AuditLogs';
 import SuperadminSettings from './pages/superadmin/Settings';
+import SuperadminProfile from './pages/superadmin/Profile';
 import SuperadminLayout from './components/superadmin/Layout';
 
 const App: React.FC = () => (
@@ -88,6 +89,7 @@ const App: React.FC = () => (
             <Route path="/superadmin/doctors" element={<SuperadminDoctors />} />
             <Route path="/superadmin/audit-logs" element={<SuperadminAuditLogs />} />
             <Route path="/superadmin/settings" element={<SuperadminSettings />} />
+            <Route path="/superadmin/profile" element={<SuperadminProfile />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

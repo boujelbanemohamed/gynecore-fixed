@@ -9,6 +9,7 @@ const navItems = [
   { to: '/calendar', icon: '📅', label: 'Planning' },
   { to: '/secretaries', icon: '👤', label: 'Secrétaires' },
   { to: '/unavailable-slots', icon: '🚫', label: 'Indisponibilités' },
+  { to: '/profile', icon: '👤', label: 'Mon Profil' },
   { to: '/settings', icon: '⚙', label: 'Paramètres' },
   { to: '/audit-logs', icon: '📊', label: "Journal d'audit" },
 ];
@@ -16,7 +17,7 @@ const navItems = [
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Tableau de bord', '/patients': 'Patientes',
   '/consultations': 'Consultations', '/calendar': 'Planning', '/settings': 'Paramètres',
-  '/audit-logs': "Journal d'audit",
+  '/audit-logs': "Journal d'audit", '/profile': 'Mon Profil',
 };
 
 const DoctorLayout: React.FC = () => {

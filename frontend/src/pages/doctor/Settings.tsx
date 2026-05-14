@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { doctorAPI } from '../../services/api';
-import PasswordChange from './PasswordChange'
-import SmtpSettings from './SmtpSettings';
 
 const IMG_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -12,22 +10,16 @@ const Settings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [pwForm, setPwForm] = useState({ current: "", newPw: "", confirm: "" });
-  const [pwMsg, setPwMsg] = useState(null);
-  const [pwLoading, setPwLoading] = useState(false);
   const [form, setForm] = useState({
-    firstName: '', lastName: '', phone: '', email: '',
     specialization: '', licenseNumber: '', rppsNumber: '',
     clinicName: '', address: '', city: '', postalCode: '', country: 'France',
-    logo: '',
-    services: '',
+    logo: '', services: '',
   });
 
   useEffect(() => {
     doctorAPI.getProfile().then(r => {
       const p = r.data.data;
       setForm({
-        firstName: p.firstName || '', lastName: p.lastName || '', phone: p.phone || '', email: p.email || '',
         specialization: p.specialization || '', licenseNumber: p.licenseNumber || '', rppsNumber: p.rppsNumber || '',
         clinicName: p.clinicName || '', address: p.address || '', city: p.city || '', postalCode: p.postalCode || '',
         country: p.country || 'France', logo: p.logo || '', services: p.services || '',
@@ -43,12 +35,10 @@ const Settings: React.FC = () => {
     setSuccess(false);
     try {
       await doctorAPI.updateProfile({
-        email: form.email, firstName: form.firstName, lastName: form.lastName, phone: form.phone,
         specialization: form.specialization, licenseNumber: form.licenseNumber,
         rppsNumber: form.rppsNumber, clinicName: form.clinicName,
         address: form.address, city: form.city, postalCode: form.postalCode,
-        country: form.country,
-        services: form.services,
+        country: form.country, services: form.services,
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -74,26 +64,6 @@ const Settings: React.FC = () => {
 
       <form onSubmit={handleSave}>
         <div className="grid-2" style={{ alignItems: 'start' }}>
-          <div className="card">
-            <div className="card-header"><span className="card-title">Informations personnelles</span></div>
-            <div className="form-group">
-              <label className="form-label">Prenom</label>
-              <input className="form-control" value={form.firstName} onChange={e => update({ firstName: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Nom</label>
-              <input className="form-control" value={form.lastName} onChange={e => update({ lastName: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input className="form-control" value={form.email} onChange={e => update({ email: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Telephone</label>
-              <input className="form-control" placeholder="01 23 45 67 89" value={form.phone} onChange={e => update({ phone: e.target.value })} />
-            </div>
-          </div>
-
           <div className="card">
             <div className="card-header"><span className="card-title">Informations professionnelles</span></div>
             <div className="form-group">
@@ -180,14 +150,10 @@ const Settings: React.FC = () => {
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Enregistrement...' : 'Sauvegarder les modifications'}
           </button>
-          {success && <span style={{ color: '#28a745', fontSize: 14, fontWeight: 500 }}>Profil mis a jour avec succes !</span>}
+          {success && <span style={{ color: '#28a745', fontSize: 14, fontWeight: 500 }}>Parametres mis a jour avec succes !</span>}
         </div>
       </form>
 
-      <div style={{ marginTop: 24 }}>
-        <PasswordChange />
-        <SmtpSettings />
-      </div>
     </div>
   );
 };

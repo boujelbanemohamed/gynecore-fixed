@@ -7,6 +7,7 @@ const nav = [
   { to: '/superadmin/doctors', label: 'Médecins', icon: '👩‍⚕️' },
   { to: '/superadmin/audit-logs', label: 'Audit', icon: '📋' },
   { to: '/superadmin/settings', label: 'Configuration', icon: '⚙️' },
+  { to: '/superadmin/profile', label: 'Mon Profil', icon: '👤' },
 ];
 
 const SuperadminLayout: React.FC = () => {

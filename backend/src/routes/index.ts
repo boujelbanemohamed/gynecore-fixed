@@ -130,5 +130,10 @@ router.post('/superadmin/doctors/:id/reset-password', authenticate, authorizeSup
 router.get('/superadmin/users', authenticate, authorizeSuperadmin, superadminController.getAllUsers);
 router.get('/superadmin/audit-logs', authenticate, authorizeSuperadmin, superadminController.getAllAuditLogs);
 router.get('/superadmin/settings', authenticate, authorizeSuperadmin, superadminController.getSystemSettings);
+router.put('/superadmin/settings', authenticate, authorizeSuperadmin, superadminController.updateSystemSettings);
+router.post('/superadmin/secretaries/:id/reset-password', authenticate, authorizeSuperadmin, superadminController.resetSecretaryPassword);
+router.patch('/superadmin/secretaries/:id/toggle-status', authenticate, authorizeSuperadmin, superadminController.toggleSecretaryStatus);
+router.put('/superadmin/profile', authenticate, authorizeSuperadmin, authController.updateSuperadminProfile);
+router.put('/superadmin/password', authenticate, authorizeSuperadmin, superadminController.changeSuperadminPassword);
 
 export default router;

@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
 import { auditMiddleware } from "./middleware/auditLog";
 import dotenv from 'dotenv';
 import helmet from 'helmet';
@@ -9,6 +10,17 @@ import routes from './routes';
 import { prisma } from './prisma';
 
 dotenv.config();
+
+const systemConfigPath = path.join(process.cwd(), 'data', 'system-config.json');
+try {
+  if (fs.existsSync(systemConfigPath)) {
+    const overrides = JSON.parse(fs.readFileSync(systemConfigPath, 'utf-8'));
+    for (const [key, val] of Object.entries(overrides)) {
+      if (typeof val === 'string') process.env[key] = val;
+    }
+    console.log('⚙️  Configuration système chargée');
+  }
+} catch { /* ignore */ }
 
 // Vérification des variables d'environnement critiques
 const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'CORS_ORIGIN'];

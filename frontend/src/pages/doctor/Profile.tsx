@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { doctorAPI } from '../../services/api';
+import PasswordChange from './PasswordChange';
 
 const DoctorProfile: React.FC = () => {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', specialization: '', address: '', city: '', postalCode: '', country: '' });
@@ -7,7 +8,6 @@ const DoctorProfile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -26,11 +26,6 @@ const DoctorProfile: React.FC = () => {
       await doctorAPI.updateProfile(form);
       setSuccessMsg('Profil mis a jour');
     } catch { setErrorMsg('Erreur de mise a jour'); } finally { setSaving(false); }
-  };
-
-  const handleLogo = async () => {
-    if (!logoFile) return;
-    try { await doctorAPI.uploadLogo(logoFile); setSuccessMsg('Logo mis a jour'); } catch { setErrorMsg('Erreur logo'); }
   };
 
   const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
@@ -72,13 +67,7 @@ const DoctorProfile: React.FC = () => {
           <button type="submit" style={btnPrimary} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
         </form>
       </div>
-      <div style={cardStyle}>
-        <h3 style={cardTitle}>Logo du cabinet</h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <input type="file" accept="image/*" onChange={e => setLogoFile(e.target.files?.[0] || null)} />
-          <button type="button" style={btnPrimary} onClick={handleLogo} disabled={!logoFile}>Uploader</button>
-        </div>
-      </div>
+      <PasswordChange />
     </div>
   );
 };

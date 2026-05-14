@@ -1,7 +1,24 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 import { Role } from '@prisma/client';
 import { prisma } from '../prisma';
+
+const CONFIG_PATH = path.join(process.cwd(), 'data', 'system-config.json');
+
+function readSystemConfig(): Record<string, string> {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+    }
+  } catch { /* ignore */ }
+  return {};
+}
+
+function writeSystemConfig(config: Record<string, string>) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+}
 
 export const getDashboard = async (_req: Request, res: Response) => {
   try {
@@ -26,11 +43,20 @@ export const getDoctors = async (_req: Request, res: Response) => {
       select: { id: true, email: true, firstName: true, lastName: true, phone: true, licenseNumber: true, specialization: true, isActive: true, createdAt: true, clinicName: true, address: true, city: true },
       orderBy: { createdAt: 'desc' },
     });
-    const withStats = await Promise.all(doctors.map(async (d) => ({
-      ...d,
-      patientsCount: await prisma.patient.count({ where: { doctorId: d.id } }),
-      appointmentsCount: await prisma.appointment.count({ where: { doctorId: d.id } }),
-    })));
+    const withStats = await Promise.all(doctors.map(async (d) => {
+      const secretaries = await prisma.user.findMany({
+        where: { role: Role.SECRETARY, doctorId: d.id },
+        select: { id: true, email: true, firstName: true, lastName: true, phone: true, isActive: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      return {
+        ...d,
+        patientsCount: await prisma.patient.count({ where: { doctorId: d.id } }),
+        appointmentsCount: await prisma.appointment.count({ where: { doctorId: d.id } }),
+        secretaries,
+        secretariesCount: secretaries.length,
+      };
+    }));
     res.json({ success: true, data: withStats });
   } catch (err) {
     console.error('[superadmin getDoctors]', err);
@@ -92,6 +118,37 @@ export const resetDoctorPassword = async (req: Request, res: Response) => {
   }
 };
 
+export const resetSecretaryPassword = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const secretary = await prisma.user.findFirst({ where: { id, role: Role.SECRETARY } });
+    if (!secretary) return res.status(404).json({ success: false, error: 'Secretaire non trouvee' });
+    const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-4).toUpperCase();
+    await prisma.user.update({ where: { id }, data: { password: await bcrypt.hash(tempPassword, 10) } });
+    res.json({ success: true, data: { tempPassword } });
+  } catch (err) {
+    console.error('[superadmin resetSecretaryPassword]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const toggleSecretaryStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const secretary = await prisma.user.findFirst({ where: { id, role: Role.SECRETARY } });
+    if (!secretary) return res.status(404).json({ success: false, error: 'Secretaire non trouvee' });
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { isActive: !secretary.isActive },
+      select: { id: true, isActive: true },
+    });
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('[superadmin toggleSecretaryStatus]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
 export const getAllUsers = async (_req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
@@ -129,20 +186,72 @@ export const getAllAuditLogs = async (req: Request, res: Response) => {
 
 export const getSystemSettings = async (_req: Request, res: Response) => {
   try {
-    const envInfo = {
-      nodeEnv: process.env.NODE_ENV,
-      frontendUrl: process.env.CORS_ORIGIN,
-      jwtExpiry: process.env.JWT_EXPIRES_IN,
-      patientJwtExpiry: process.env.JWT_PATIENT_EXPIRES_IN,
-      smtpHost: process.env.SMTP_HOST,
-      smtpPort: process.env.SMTP_PORT,
-      smtpFromEmail: process.env.SMTP_FROM_EMAIL,
-      smtpFromName: process.env.SMTP_FROM_NAME,
+    const fileConfig = readSystemConfig();
+    const envInfo: Record<string, string> = {
+      NODE_ENV: process.env.NODE_ENV || 'development',
+      CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
+      JWT_PATIENT_EXPIRES_IN: process.env.JWT_PATIENT_EXPIRES_IN || '7d',
+      SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
+      SMTP_PORT: process.env.SMTP_PORT || '587',
+      SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || '',
+      SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'GyneCare',
+      SMTP_USER: process.env.SMTP_USER || '',
+      RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || '900000',
+      RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX || '20',
+      FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
     };
+    Object.keys(fileConfig).forEach((k) => { if (envInfo[k] !== undefined) envInfo[k] = fileConfig[k]; });
     const dbInfo = await prisma.$queryRaw`SELECT version() as version`;
     res.json({ success: true, data: { env: envInfo, db: dbInfo } });
   } catch (err) {
     console.error('[superadmin getSystemSettings]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const updateSystemSettings = async (req: Request, res: Response) => {
+  try {
+    const { settings } = req.body;
+    if (!settings || typeof settings !== 'object') {
+      return res.status(400).json({ success: false, error: 'Donnees invalides' });
+    }
+    const allowedKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME', 'SMTP_USER', 'SMTP_PASS',
+      'CORS_ORIGIN', 'FRONTEND_URL', 'JWT_EXPIRES_IN', 'JWT_PATIENT_EXPIRES_IN',
+      'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX'];
+    const current = readSystemConfig();
+    for (const key of allowedKeys) {
+      if (settings[key] !== undefined) current[key] = String(settings[key]);
+    }
+    writeSystemConfig(current);
+    res.json({ success: true, message: 'Configuration sauvegardee. Redemarrez le serveur pour appliquer les changements.' });
+  } catch (err) {
+    console.error('[superadmin updateSystemSettings]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const changeSuperadminPassword = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Champs requis manquants' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, error: 'Le mot de passe doit contenir au moins 8 caracteres' });
+    }
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.role !== Role.SUPERADMIN) {
+      return res.status(403).json({ success: false, error: 'Acces refuse' });
+    }
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(400).json({ success: false, error: 'Mot de passe actuel incorrect' });
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+    res.json({ success: true, message: 'Mot de passe mis a jour avec succes' });
+  } catch (err) {
+    console.error('[superadmin changePassword]', err);
     res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 };
