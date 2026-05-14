@@ -137,6 +137,9 @@ router.patch('/superadmin/secretaries/:id/toggle-status', authenticate, authoriz
 router.put('/superadmin/profile', authenticate, authorizeSuperadmin, authController.updateSuperadminProfile);
 router.put('/superadmin/password', authenticate, authorizeSuperadmin, superadminController.changeSuperadminPassword);
 router.get('/superadmin/health', authenticate, authorizeSuperadmin, superadminController.getSystemHealth);
+router.get('/superadmin/doctors/:id/patients', authenticate, authorizeSuperadmin, superadminController.getDoctorPatients);
+router.get('/superadmin/patients/:id', authenticate, authorizeSuperadmin, superadminController.getPatientDetail);
+router.post('/superadmin/patients/:id/reset-password', authenticate, authorizeSuperadmin, superadminController.resetPatientPassword);
 
 // ===== Template management (superadmin) =====
 router.get('/superadmin/templates', authenticate, authorizeSuperadmin, templateController.getTemplatesList);

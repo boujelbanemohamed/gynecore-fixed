@@ -311,6 +311,61 @@ export const getSystemHealth = async (_req: Request, res: Response) => {
   }
 };
 
+export const getDoctorPatients = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const doctor = await prisma.user.findFirst({ where: { id, role: Role.DOCTOR } });
+    if (!doctor) return res.status(404).json({ success: false, error: 'Medecin non trouve' });
+    const patients = await prisma.patient.findMany({
+      where: { doctorId: id, isArchived: false },
+      include: {
+        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, isActive: true, createdAt: true } },
+        _count: { select: { appointments: true, consultations: true, prescriptions: true, certificates: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: patients });
+  } catch (err) {
+    console.error('[superadmin getDoctorPatients]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const getPatientDetail = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const patient = await prisma.patient.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, isActive: true, createdAt: true } },
+        appointments: { orderBy: { startTime: 'desc' }, take: 10, include: { doctor: { select: { firstName: true, lastName: true } } } },
+        consultations: { orderBy: { date: 'desc' }, take: 10 },
+        prescriptions: { orderBy: { createdAt: 'desc' }, take: 10 },
+        certificates: { orderBy: { createdAt: 'desc' }, take: 10 },
+      },
+    });
+    if (!patient) return res.status(404).json({ success: false, error: 'Patient non trouve' });
+    res.json({ success: true, data: patient });
+  } catch (err) {
+    console.error('[superadmin getPatientDetail]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const resetPatientPassword = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const patient = await prisma.patient.findUnique({ where: { id }, include: { user: true } });
+    if (!patient) return res.status(404).json({ success: false, error: 'Patient non trouve' });
+    const tempPassword = crypto.randomBytes(6).toString('hex') + crypto.randomBytes(3).toString('hex').toUpperCase();
+    await prisma.user.update({ where: { id: patient.userId }, data: { password: await bcrypt.hash(tempPassword, 10) } });
+    res.json({ success: true, data: { tempPassword } });
+  } catch (err) {
+    console.error('[superadmin resetPatientPassword]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
 export const changeSuperadminPassword = async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;

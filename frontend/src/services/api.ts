@@ -128,6 +128,9 @@ export const superadminAPI = {
   getReminderSettings: () => api.get('/superadmin/reminder-settings'),
   updateReminderSettings: (data: { reminderTimings: number[] }) => api.put('/superadmin/reminder-settings', data),
   getHealth: () => api.get('/superadmin/health'),
+  getDoctorPatients: (doctorId: string) => api.get(`/superadmin/doctors/${doctorId}/patients`),
+  getPatientDetail: (patientId: string) => api.get(`/superadmin/patients/${patientId}`),
+  resetPatientPassword: (patientId: string) => api.post(`/superadmin/patients/${patientId}/reset-password`),
 };
 
 export const secretaryAPI = {

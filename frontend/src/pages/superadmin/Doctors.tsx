@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { superadminAPI } from '../../services/api';
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
@@ -74,6 +74,74 @@ const SecretaryModal = ({ secretary, doctorName, onClose }: { secretary: any; do
   </div>
 );
 
+const PatientModal = ({ patient, onClose, onResetPassword }: { patient: any; onClose: () => void; onResetPassword: (id: string) => void }) => {
+  const [detail, setDetail] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    superadminAPI.getPatientDetail(patient.id).then(r => setDetail(r.data.data)).catch(console.error).finally(() => setLoading(false));
+  }, [patient.id]);
+
+  return (
+    <div style={modalOverlay} onClick={onClose}>
+      <div style={{ ...modalBox, minWidth: 700 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>
+            {patient.user.firstName} {patient.user.lastName}
+          </h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#999' }}>×</button>
+        </div>
+        {loading ? <p>Chargement...</p> : !detail ? <p>Erreur</p> : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+              <div style={fieldRow}><span style={fieldLabel}>Email</span><span style={fieldValue}>{detail.user.email}</span></div>
+              <div style={fieldRow}><span style={fieldLabel}>Téléphone</span><span style={fieldValue}>{detail.user.phone || '-'}</span></div>
+              <div style={fieldRow}><span style={fieldLabel}>Date naissance</span><span style={fieldValue}>{new Date(detail.dateOfBirth).toLocaleDateString('fr-FR')}</span></div>
+              <div style={fieldRow}><span style={fieldLabel}>Adresse</span><span style={fieldValue}>{detail.address ? `${detail.address}${detail.city ? ', ' + detail.city : ''}` : '-'}</span></div>
+              <div style={fieldRow}><span style={fieldLabel}>Groupe sanguin</span><span style={fieldValue}>{detail.bloodType || '-'}</span></div>
+              <div style={fieldRow}><span style={fieldLabel}>Allergies</span><span style={fieldValue}>{detail.allergies || '-'}</span></div>
+              <div style={fieldRow}><span style={fieldLabel}>Maladies chroniques</span><span style={fieldValue}>{detail.chronicDiseases || '-'}</span></div>
+              <div style={fieldRow}><span style={fieldLabel}>Contact urgence</span><span style={fieldValue}>{detail.emergencyContact ? `${detail.emergencyContact} (${detail.emergencyPhone || ''})` : '-'}</span></div>
+              <div style={fieldRow}><span style={fieldLabel}>Patient(e) depuis</span><span style={fieldValue}>{new Date(detail.createdAt).toLocaleDateString('fr-FR')}</span></div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              <div className="card" style={{ flex: 1, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#1a73e8' }}>{detail._count?.appointments ?? detail.appointments?.length ?? 0}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>Rendez-vous</div>
+              </div>
+              <div className="card" style={{ flex: 1, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#34a853' }}>{detail._count?.consultations ?? detail.consultations?.length ?? 0}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>Consultations</div>
+              </div>
+              <div className="card" style={{ flex: 1, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#fbbc04' }}>{detail._count?.prescriptions ?? detail.prescriptions?.length ?? 0}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>Prescriptions</div>
+              </div>
+            </div>
+            {detail.appointments?.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <strong style={{ fontSize: 13, color: '#666' }}>Derniers rendez-vous :</strong>
+                <div style={{ marginTop: 4, fontSize: 12 }}>
+                  {detail.appointments.map((a: any) => (
+                    <div key={a.id} style={{ padding: '4px 8px', background: '#f9f9f9', borderRadius: 4, marginBottom: 4, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <span>{new Date(a.startTime).toLocaleDateString('fr-FR')}</span>
+                      <span style={{ color: '#999' }}>{a.doctor?.firstName} {a.doctor?.lastName}</span>
+                      <span className={`badge ${a.status === 'COMPLETED' ? 'badge-success' : a.status === 'CANCELLED' ? 'badge-error' : 'badge-warning'}`}>{a.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button className="btn btn-outline btn-sm" onClick={() => onResetPassword(patient.id)}>Réinitialiser le mot de passe</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const SuperadminDoctors: React.FC = () => {
   const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,13 +151,27 @@ const SuperadminDoctors: React.FC = () => {
   const [msg, setMsg] = useState<{type:string;text:string}|null>(null);
   const [detailDoctor, setDetailDoctor] = useState<any>(null);
   const [detailSecretary, setDetailSecretary] = useState<{secretary: any; doctorName: string} | null>(null);
+  const [detailPatient, setDetailPatient] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState<{message:string;onConfirm:()=>void}|null>(null);
+  const [patientsMap, setPatientsMap] = useState<Record<string, any[]>>({});
+  const [loadingPatients, setLoadingPatients] = useState<Record<string, boolean>>({});
 
   const load = () => {
     setLoading(true);
     superadminAPI.getDoctors().then(r => setDoctors(r.data.data)).catch(console.error).finally(() => setLoading(false));
   };
   useEffect(load, []);
+
+  useEffect(() => {
+    if (expandedId && !patientsMap[expandedId] && !loadingPatients[expandedId]) {
+      setLoadingPatients(prev => ({ ...prev, [expandedId]: true }));
+      superadminAPI.getDoctorPatients(expandedId).then(r => {
+        setPatientsMap(prev => ({ ...prev, [expandedId]: r.data.data }));
+      }).catch(console.error).finally(() => {
+        setLoadingPatients(prev => ({ ...prev, [expandedId]: false }));
+      });
+    }
+  }, [expandedId, patientsMap, loadingPatients]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +202,18 @@ const SuperadminDoctors: React.FC = () => {
       await superadminAPI.updateDoctor(id, { isActive: !current });
       load();
     } catch { setMsg({ type: 'err', text: 'Erreur' }); }
+  };
+
+  const handleResetPatientPassword = (id: string) => {
+    setConfirmDialog({
+      message: 'Réinitialiser le mot de passe de ce patient ?',
+      onConfirm: async () => {
+        try {
+          const r = await superadminAPI.resetPatientPassword(id);
+          setMsg({ type: 'ok', text: `Nouveau mot de passe: ${r.data.data.tempPassword}` });
+        } catch { setMsg({ type: 'err', text: 'Erreur lors de la réinitialisation' }); }
+      },
+    });
   };
 
   const handleResetSecretaryPassword = (id: string) => {
@@ -200,8 +294,30 @@ const SuperadminDoctors: React.FC = () => {
                     </td>
                   </tr>
                   {expandedId === d.id && (
-                    <tr key={`${d.id}-sec`}>
+                    <tr key={`${d.id}-exp`}>
                       <td colSpan={9} style={{ padding: '0 10px 12px 38px', background: '#fafafa' }}>
+                        {/* Patients */}
+                        <div style={{ marginBottom: 16 }}>
+                          <strong style={{ fontSize: 12, color: '#666' }}>Patient(e)s ({d.patientsCount}) :</strong>
+                          {loadingPatients[d.id] ? (
+                            <p style={{ fontSize: 12, color: '#999', margin: '4px 0' }}>Chargement...</p>
+                          ) : patientsMap[d.id]?.length > 0 ? (
+                            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {patientsMap[d.id].map((p: any) => (
+                                <div key={p.id} style={{ fontSize: 13, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '4px 0', borderBottom: '1px solid #f0f0f0' }}>
+                                  <span style={{ fontWeight: 500, minWidth: 140 }}>{p.user.firstName} {p.user.lastName}</span>
+                                  <span style={{ color: '#666' }}>{p.user.email}</span>
+                                  <span style={{ color: '#999', fontSize: 12 }}>{p._count.appointments} RDV</span>
+                                  <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }} onClick={() => setDetailPatient(p)}>Voir</button>
+                                  <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }} onClick={() => handleResetPatientPassword(p.id)}>Reset MDP</button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p style={{ fontSize: 12, color: '#999', margin: '4px 0' }}>Aucun patient</p>
+                          )}
+                        </div>
+                        {/* Secretaries */}
                         <strong style={{ fontSize: 12, color: '#666' }}>Secrétaires rattachées :</strong>
                         {d.secretaries?.length > 0 ? (
                           <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -237,6 +353,7 @@ const SuperadminDoctors: React.FC = () => {
         </div>
       )}
       {detailDoctor && <DoctorModal doctor={detailDoctor} onClose={() => setDetailDoctor(null)} />}
+      {detailPatient && <PatientModal patient={detailPatient} onClose={() => setDetailPatient(null)} onResetPassword={handleResetPatientPassword} />}
       {detailSecretary && <SecretaryModal secretary={detailSecretary.secretary} doctorName={detailSecretary.doctorName} onClose={() => setDetailSecretary(null)} />}
       {confirmDialog && (
         <ConfirmDialog

@@ -87,6 +87,30 @@ test.describe('Superadmin Portal', () => {
       await page.waitForTimeout(500);
       await expect(page.getByText('Créer un médecin')).toBeVisible();
     });
+
+    test('SA24 - Expand doctor shows patients list', async ({ page }) => {
+      await page.waitForLoadState('networkidle');
+      const expandBtn = page.locator('tbody tr td').first();
+      await expandBtn.click();
+      await page.waitForTimeout(2000);
+      const body = await page.locator('body').textContent();
+      expect(body).toContain('Patient(e)s');
+    });
+
+    test('SA25 - Patient detail modal opens', async ({ page }) => {
+      await page.waitForLoadState('networkidle');
+      const expandBtn = page.locator('tbody tr td').first();
+      await expandBtn.click();
+      await page.waitForTimeout(2000);
+      const bodyText = await page.locator('body').textContent();
+      if (bodyText?.includes('Aucun patient')) return;
+      await expect(page.getByText('Patient(e)s')).toBeVisible();
+      const [response] = await Promise.all([
+        page.waitForResponse(r => r.url().includes('/api/superadmin/patients/') && r.status() === 200, { timeout: 10000 }),
+        page.getByRole('button', { name: 'Voir' }).nth(1).click(),
+      ]);
+      await expect(page.getByText('Date naissance')).toBeVisible({ timeout: 5000 });
+    });
   });
 
   test.describe('Templates', () => {
