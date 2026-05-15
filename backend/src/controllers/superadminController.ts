@@ -46,23 +46,22 @@ export const getDoctors = async (_req: Request, res: Response) => {
   try {
     const doctors = await prisma.user.findMany({
       where: { role: Role.DOCTOR },
-      select: { id: true, email: true, firstName: true, lastName: true, phone: true, licenseNumber: true, specialization: true, isActive: true, createdAt: true, clinicName: true, address: true, city: true },
+      select: {
+        id: true, email: true, firstName: true, lastName: true, phone: true,
+        licenseNumber: true, specialization: true, isActive: true, createdAt: true,
+        clinicName: true, address: true, city: true,
+        _count: { select: { managedPatients: true, appointments: true, secretaries: true } },
+        secretaries: {
+          select: { id: true, email: true, firstName: true, lastName: true, phone: true, isActive: true },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
-    const withStats = await Promise.all(doctors.map(async (d) => {
-      const secretaries = await prisma.user.findMany({
-        where: { role: Role.SECRETARY, doctorId: d.id },
-        select: { id: true, email: true, firstName: true, lastName: true, phone: true, isActive: true },
-        orderBy: { createdAt: 'desc' },
-      });
-      return {
-        ...d,
-        patientsCount: await prisma.patient.count({ where: { doctorId: d.id } }),
-        appointmentsCount: await prisma.appointment.count({ where: { doctorId: d.id } }),
-        secretaries,
-        secretariesCount: secretaries.length,
-      };
-    }));
+    const withStats = doctors.map(d => {
+      const { _count, secretaries, ...rest } = d;
+      return { ...rest, patientsCount: _count.managedPatients, appointmentsCount: _count.appointments, secretaries, secretariesCount: _count.secretaries };
+    });
     res.json({ success: true, data: withStats });
   } catch (err) {
     console.error('[superadmin getDoctors]', err);
@@ -179,10 +178,13 @@ export const getAllAuditLogs = async (req: Request, res: Response) => {
       }),
       prisma.auditLog.count(),
     ]);
-    const logsWithUser = await Promise.all(logs.map(async (log) => {
-      const u = await prisma.user.findUnique({ where: { id: log.userId }, select: { email: true, firstName: true, lastName: true, role: true } });
-      return { ...log, user: u };
-    }));
+    const userIds = [...new Set(logs.map(l => l.userId))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true },
+    });
+    const userMap = new Map(users.map(u => [u.id, u]));
+    const logsWithUser = logs.map(log => ({ ...log, user: userMap.get(log.userId) || null }));
     res.json({ success: true, data: { logs: logsWithUser, total, page, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     console.error('[superadmin getAllAuditLogs]', err);
@@ -202,8 +204,8 @@ export const getSystemSettings = async (_req: Request, res: Response) => {
       SMTP_PORT: process.env.SMTP_PORT || '587',
       SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || '',
       SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'GyneCare',
-      SMTP_USER: process.env.SMTP_USER || '',
-      SMTP_PASS: process.env.SMTP_PASS || '',
+      SMTP_USER: process.env.SMTP_USER ? process.env.SMTP_USER.replace(/^(.{2}).*(@.*)$/, '$1***$2') : '',
+      SMTP_PASS: process.env.SMTP_PASS ? '********' : '',
       RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || '900000',
       RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX || '20',
       FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',

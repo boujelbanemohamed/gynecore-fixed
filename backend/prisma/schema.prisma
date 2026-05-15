@@ -161,6 +161,7 @@ model Consultation {
   @@index([date])
   @@index([patientId])
   @@index([status])
+  @@index([patientId, date])
   @@map("consultations")
 }
 
@@ -201,6 +202,7 @@ model Appointment {
 
   @@index([doctorId])
   @@index([startTime])
+  @@index([doctorId, startTime])
   @@map("appointments")
 }
 

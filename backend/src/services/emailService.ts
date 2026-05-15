@@ -1,64 +1,4 @@
-import nodemailer from 'nodemailer';
-import { prisma } from '../prisma';
-import { decrypt } from '../utils/encryption';
-
-const transportCache = new Map<string, nodemailer.Transporter>();
-
-async function getSmtpConfigForDoctor(doctorId: string) {
-  const config = await prisma.smtpConfig.findUnique({ where: { doctorId } });
-  if (config && config.enabled) {
-    return {
-      host: config.smtpHost,
-      port: config.smtpPort,
-      secure: config.smtpSecure,
-      user: config.smtpUser,
-      pass: decrypt(config.smtpPass),
-      fromName: config.smtpFromName,
-      fromEmail: config.smtpFromEmail,
-    };
-  }
-  const envUser = process.env.SMTP_USER || '';
-  const envPass = process.env.SMTP_PASS || '';
-  if (!envUser || !envPass) return null;
-  return {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: (process.env.SMTP_SECURE || 'false') === 'true',
-    user: envUser,
-    pass: envPass,
-    fromName: process.env.SMTP_FROM_NAME || 'GyneCare',
-    fromEmail: process.env.SMTP_FROM_EMAIL || envUser,
-  };
-}
-
-function getTransporter(doctorId: string, cfg: { host: string; port: number; secure: boolean; user: string; pass: string }): nodemailer.Transporter {
-  const cacheKey = `${cfg.user}@${cfg.host}:${cfg.port}`;
-  let transport = transportCache.get(cacheKey);
-  if (!transport) {
-    transport = nodemailer.createTransport({
-      host: cfg.host, port: cfg.port, secure: cfg.secure,
-      auth: { user: cfg.user, pass: cfg.pass },
-    });
-    transportCache.set(cacheKey, transport);
-  }
-  return transport;
-}
-
-export async function verifySmtpConnection(): Promise<boolean> {
-  try {
-    const envUser = process.env.SMTP_USER || '';
-    const envPass = process.env.SMTP_PASS || '';
-    if (!envUser || !envPass) return false;
-    const transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: (process.env.SMTP_SECURE || 'false') === 'true',
-      auth: { user: envUser, pass: envPass },
-    });
-    await transport.verify();
-    return true;
-  } catch { return false; }
-}
+import { getSmtpConfigForDoctor, getTransporter } from '../utils/smtp';
 
 async function sendEmail(doctorId: string, to: string, subject: string, html: string): Promise<boolean> {
   try {
@@ -67,7 +7,7 @@ async function sendEmail(doctorId: string, to: string, subject: string, html: st
       console.error('[EMAIL] Aucune configuration SMTP pour le medecin', doctorId);
       return false;
     }
-    const transport = getTransporter(doctorId, cfg);
+    const transport = getTransporter(cfg);
     await transport.sendMail({
       from: `"${cfg.fromName}" <${cfg.fromEmail}>`,
       to, subject, html,
@@ -195,3 +135,5 @@ body{margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif;background:#f4f
 </body></html>`;
   return sendEmail(doctorId, to, 'GyneCare - Rendez-vous annule', html);
 }
+
+export { verifySmtpConnection } from '../utils/smtp';

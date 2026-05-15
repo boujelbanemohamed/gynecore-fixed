@@ -1,11 +1,9 @@
-import nodemailer from 'nodemailer';
 import { prisma } from '../prisma';
-import { decrypt } from '../utils/encryption';
+import { getSmtpConfigForDoctor, getTransporter } from '../utils/smtp';
 import fs from 'fs';
 import path from 'path';
 
 const CONFIG_PATH = path.join(process.cwd(), 'data', 'system-config.json');
-const transportCache = new Map<string, nodemailer.Transporter>();
 
 interface TemplateConfig {
   subject: string;
@@ -46,46 +44,6 @@ function renderTemplate(template: string, context: TemplateContext): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     return context[key] !== undefined ? context[key] : `{{${key}}}`;
   });
-}
-
-async function getSmtpConfigForDoctor(doctorId: string) {
-  const config = await prisma.smtpConfig.findUnique({ where: { doctorId } });
-  if (config && config.enabled) {
-    return {
-      host: config.smtpHost,
-      port: config.smtpPort,
-      secure: config.smtpSecure,
-      user: config.smtpUser,
-      pass: decrypt(config.smtpPass),
-      fromName: config.smtpFromName,
-      fromEmail: config.smtpFromEmail,
-    };
-  }
-  const envUser = process.env.SMTP_USER || '';
-  const envPass = process.env.SMTP_PASS || '';
-  if (!envUser || !envPass) return null;
-  return {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: (process.env.SMTP_SECURE || 'false') === 'true',
-    user: envUser,
-    pass: envPass,
-    fromName: process.env.SMTP_FROM_NAME || 'GyneCare',
-    fromEmail: process.env.SMTP_FROM_EMAIL || envUser,
-  };
-}
-
-function getTransporter(doctorId: string, cfg: { host: string; port: number; secure: boolean; user: string; pass: string }): nodemailer.Transporter {
-  const cacheKey = `${cfg.user}@${cfg.host}:${cfg.port}`;
-  let transport = transportCache.get(cacheKey);
-  if (!transport) {
-    transport = nodemailer.createTransport({
-      host: cfg.host, port: cfg.port, secure: cfg.secure,
-      auth: { user: cfg.user, pass: cfg.pass },
-    });
-    transportCache.set(cacheKey, transport);
-  }
-  return transport;
 }
 
 const FALLBACK_TEMPLATES: Record<string, TemplateConfig> = {
@@ -166,7 +124,7 @@ export async function sendTemplateEmail(
     const subject = renderTemplate(template.subject, context);
     const html = renderTemplate(buildEmailHtml(template.body), context);
 
-    const transport = getTransporter(doctorId, cfg);
+    const transport = getTransporter(cfg);
     await transport.sendMail({
       from: `"${cfg.fromName}" <${cfg.fromEmail}>`,
       to,
@@ -210,7 +168,6 @@ export function getReminderTimings(): number[] {
         const valid = config.reminderTimings.filter((v: any) => typeof v === 'number' && v >= 1 && v <= 168);
         if (valid.length > 0) return valid;
       }
-      // Migration depuis l'ancien format single value
       if (config.reminderTimingHours) {
         const val = parseInt(config.reminderTimingHours, 10);
         if (!isNaN(val) && val > 0) return [val];
