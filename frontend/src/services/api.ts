@@ -138,6 +138,7 @@ export const superadminAPI = {
   getHealthAuditLogs: (params?: any) => api.get('/superadmin/health-audit', { params }),
   updateHealthInterval: (interval: number) => api.put('/superadmin/settings', { settings: { HEALTH_CHECK_INTERVAL: String(interval) } }),
   toggleHealthComponent: (component: string, enabled: boolean) => api.post('/superadmin/health/toggle', { component, enabled }),
+  recoverHealthComponent: (component: string) => api.post(`/superadmin/health/recover/${component}`),
   getDoctorPatients: (doctorId: string) => api.get(`/superadmin/doctors/${doctorId}/patients`),
   getPatientDetail: (patientId: string) => api.get(`/superadmin/patients/${patientId}`),
   resetPatientPassword: (patientId: string) => api.post(`/superadmin/patients/${patientId}/reset-password`),

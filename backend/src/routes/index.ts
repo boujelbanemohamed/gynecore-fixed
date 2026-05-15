@@ -151,6 +151,7 @@ router.put('/superadmin/password', authenticate, authorizeSuperadmin, superadmin
 router.get('/superadmin/health', authenticate, authorizeSuperadmin, superadminController.getSystemHealth);
 router.get('/superadmin/health-audit', authenticate, authorizeSuperadmin, superadminController.getHealthAuditLogs);
 router.post('/superadmin/health/toggle', authenticate, authorizeSuperadmin, superadminController.toggleHealthComponent);
+router.post('/superadmin/health/recover/:component', authenticate, authorizeSuperadmin, superadminController.recoverHealthComponent);
 router.get('/superadmin/doctors/:id/patients', authenticate, authorizeSuperadmin, superadminController.getDoctorPatients);
 router.get('/superadmin/patients/:id', authenticate, authorizeSuperadmin, superadminController.getPatientDetail);
 router.post('/superadmin/patients/:id/reset-password', authenticate, authorizeSuperadmin, superadminController.resetPatientPassword);

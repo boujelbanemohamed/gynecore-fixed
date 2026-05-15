@@ -101,6 +101,7 @@ const SystemHealth: React.FC = () => {
   const [intervalInput, setIntervalInput] = useState('30');
   const [savingInterval, setSavingInterval] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [recovering, setRecovering] = useState<string | null>(null);
   const [lastToggleResult, setLastToggleResult] = useState<string | null>(null);
   const [auditPage, setAuditPage] = useState(1);
   const [auditTotalPages, setAuditTotalPages] = useState(1);
@@ -205,6 +206,15 @@ const SystemHealth: React.FC = () => {
     }
   };
 
+  const handleRecover = async (component: string) => {
+    setRecovering(component);
+    try {
+      await superadminAPI.recoverHealthComponent(component);
+      fetchHealth(false);
+    } catch { /* ignore */ }
+    finally { setRecovering(null); }
+  };
+
   const renderCard = (key: string, check: any, children: React.ReactNode) => {
     const isDisabled = check.disabled;
     return (
@@ -251,6 +261,12 @@ const SystemHealth: React.FC = () => {
           <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, fontSize: 12, background: check.recoverySuccess ? '#e8f5e9' : '#fef7f7', border: `1px solid ${check.recoverySuccess ? '#c8e6c9' : '#fed7d7'}` }}>
             <span style={{ fontWeight: 600 }}>Reparation :</span> {check.recoveryAction} — {check.recoverySuccess ? 'Reussi' : 'Echec'}
           </div>
+        )}
+        {!isDisabled && check.status !== 'ok' && (
+          <button onClick={() => handleRecover(key)} disabled={recovering === key}
+            style={{ marginTop: 12, padding: '6px 14px', borderRadius: 4, border: '1px solid #e67e22', background: '#fff', color: '#e67e22', fontSize: 12, cursor: 'pointer', fontWeight: 500, opacity: recovering === key ? 0.6 : 1 }}>
+            {recovering === key ? 'Reparation...' : 'Reparer'}
+          </button>
         )}
       </div>
     );

@@ -38,7 +38,7 @@ function writeSystemConfig(config: Record<string, string>) {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
 }
 
-function getDisabledComponents(): Set<string> {
+export function getDisabledComponents(): Set<string> {
   const config = readSystemConfig();
   const raw = config.DISABLED_COMPONENTS || "";
   return new Set(raw.split(",").filter(Boolean));
@@ -270,4 +270,23 @@ export async function runFullCheck(): Promise<CheckResult[]> {
   }
 
   return results;
+}
+
+export async function recoverComponent(component: string): Promise<CheckResult> {
+  const fn = checkFns[component];
+  if (!fn) throw new Error(`Composant inconnu: ${component}`);
+  const result = await fn();
+  const action = result.recoveryAction
+    ? result.recoverySuccess ? "RECOVERY_OK" : "RECOVERY_FAIL"
+    : "CHECK_OK";
+  await logRecovery(
+    result.component,
+    result.status,
+    action,
+    result.recoveryAction
+      ? `[MANUAL] ${result.recoveryAction} — ${result.recoverySuccess ? "succes" : "echec"} : ${result.message}`
+      : `Reparation manuelle : ${result.message}`,
+    result.durationMs,
+  );
+  return result;
 }

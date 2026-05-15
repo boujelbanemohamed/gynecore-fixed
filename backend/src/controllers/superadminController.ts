@@ -400,6 +400,24 @@ export const toggleHealthComponent = async (req: Request, res: Response) => {
   }
 };
 
+export const recoverHealthComponent = async (req: Request, res: Response) => {
+  try {
+    const { component } = req.params;
+    if (!component || !(healthService.ALL_COMPONENTS as readonly string[]).includes(component)) {
+      return res.status(400).json({ success: false, error: 'Composant invalide' });
+    }
+    const disabled = healthService.getDisabledComponents();
+    if (disabled.has(component)) {
+      return res.status(400).json({ success: false, error: 'Composant desactive, activez-le d\'abord' });
+    }
+    const result = await healthService.recoverComponent(component);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('[superadmin recoverHealthComponent]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
 export const getDoctorPatients = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
