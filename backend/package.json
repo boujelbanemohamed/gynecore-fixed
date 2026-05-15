@@ -8,7 +8,10 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node src/prisma/seed.ts",
-    "test": "jest --verbose"
+    "test": "jest --verbose",
+    "lint": "eslint src/ --ext .ts",
+    "lint:fix": "eslint src/ --ext .ts --fix",
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
@@ -34,13 +37,20 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^20.11.0",
     "@types/supertest": "^7.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
     "jest": "^30.4.2",
+    "prettier": "^3.8.3",
     "prisma": "^5.10.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.59.3"
   },
   "prisma": {
     "seed": "ts-node src/prisma/seed.ts"

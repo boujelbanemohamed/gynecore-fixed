@@ -1,0 +1,9 @@
+{
+  "extends": ["react-app", "react-app/jest"],
+  "plugins": ["prettier"],
+  "rules": {
+    "prettier/prettier": ["warn", { "singleQuote": true, "trailingComma": "all", "printWidth": 120 }],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "no-console": "off"
+  }
+}

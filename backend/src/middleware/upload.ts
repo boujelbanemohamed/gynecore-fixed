@@ -17,7 +17,11 @@ const logoStorage = multer.diskStorage({
 
 const logoFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Type non autorise'));
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Type non autorise'));
+  }
 };
 
 export const uploadLogo = multer({ storage: logoStorage, fileFilter: logoFilter, limits: { fileSize: 5 * 1024 * 1024 } });
@@ -37,7 +41,11 @@ const docStorage = multer.diskStorage({
 
 const docFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-  allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Type non autorise'));
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Type non autorise'));
+  }
 };
 
 export const uploadDocument = multer({ storage: docStorage, fileFilter: docFilter, limits: { fileSize: 20 * 1024 * 1024 } });
