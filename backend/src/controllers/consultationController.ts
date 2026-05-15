@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ConsultationType } from '@prisma/client';
+import { ConsultationType, AppointmentStatus } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../prisma';
 
@@ -57,7 +57,7 @@ export const getConsultations = async (req: Request, res: Response) => {
     const endDate = req.query.endDate as string;
 
     // Build where clause
-    const and: Record<string, unknown>[] = [{ patient: { doctorId } }];
+    const and: Record<string, unknown>[] = [{ patient: { doctorId } }, { status: { not: 'CANCELLED' } }];
 
     if (patientId) and.push({ patientId });
     if (type) and.push({ type });
@@ -163,6 +163,51 @@ export const updateConsultation = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: err.errors[0].message });
     }
     console.error('[updateConsultation] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const deleteConsultation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const doctorId = req.user!.userId;
+    const consultation = await prisma.consultation.findFirst({
+      where: { id, patient: { doctorId } },
+    });
+    if (!consultation) return res.status(404).json({ success: false, error: 'Consultation non trouvee' });
+    await prisma.consultation.delete({ where: { id } });
+    return res.json({ success: true, data: null });
+  } catch (err) {
+    console.error('[deleteConsultation] Erreur:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const cancelConsultation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const doctorId = req.user!.userId;
+
+    const consultation = await prisma.consultation.findFirst({
+      where: { id, patient: { doctorId } },
+      include: { appointment: { select: { id: true, status: true } } },
+    });
+    if (!consultation) return res.status(404).json({ success: false, error: 'Consultation non trouvee' });
+    if (consultation.status === 'CANCELLED') return res.status(400).json({ success: false, error: 'Consultation deja annulee' });
+
+    await prisma.consultation.update({ where: { id }, data: { status: 'CANCELLED' } });
+
+    // Annuler le RDV lie si toujours actif
+    if (consultation.appointment && consultation.appointment.status !== 'CANCELLED') {
+      await prisma.appointment.update({
+        where: { id: consultation.appointment.id },
+        data: { status: AppointmentStatus.CANCELLED },
+      });
+    }
+
+    return res.json({ success: true, data: null });
+  } catch (err) {
+    console.error('[cancelConsultation] Erreur:', err);
     return res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 };

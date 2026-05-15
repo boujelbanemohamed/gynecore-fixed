@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { doctorAPI } from '../../services/api';
 import Alert from '../../components/shared/Alert';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 const IMG_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -12,6 +13,12 @@ const Settings: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string|null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [gcConnected, setGcConnected] = useState(false);
+  const [gcEventsCount, setGcEventsCount] = useState(0);
+  const [gcSyncing, setGcSyncing] = useState(false);
+  const [health, setHealth] = useState<any>(null);
+  const [loadingHealth, setLoadingHealth] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{message:string;onConfirm:()=>void}|null>(null);
   const [form, setForm] = useState({
     specialization: '', licenseNumber: '', rppsNumber: '',
     clinicName: '', address: '', city: '', postalCode: '', country: 'France',
@@ -27,7 +34,19 @@ const Settings: React.FC = () => {
         country: p.country || 'France', logo: p.logo || '', services: p.services || '',
       });
     }).catch(() => {});
+    doctorAPI.getGoogleCalendarStatus().then(r => {
+      setGcConnected(r.data.data?.connected || false);
+    }).catch(() => {});
+    fetchHealth();
   }, []);
+
+  const fetchHealth = async () => {
+    setLoadingHealth(true);
+    try {
+      const res = await doctorAPI.getHealth();
+      setHealth(res.data.data);
+    } catch {} finally { setLoadingHealth(false); }
+  };
 
   const update = (patch: any) => setForm(prev => ({ ...prev, ...patch }));
 
@@ -146,6 +165,92 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* GOOGLE CALENDAR */}
+          <div className="card">
+            <div className="card-header"><span className="card-title">Google Agenda</span></div>
+            <p className="text-muted" style={{ fontSize: 13, marginBottom: 16 }}>
+              Connectez votre Google Agenda pour afficher vos événements directement dans le planning GyneCare.
+            </p>
+            <div style={{
+              display:'flex',alignItems:'center',justifyContent:'space-between',
+              padding:'14px 16px',borderRadius:'var(--radius-sm)',
+              background:gcConnected?'#f1f8e9':'#fff8e1',
+              border:gcConnected?'1px solid #c8e6c9':'1px solid #ffe082'
+            }}>
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:20}}>{gcConnected?'✅':'⚠️'}</span>
+                <div>
+                  <div style={{fontWeight:500,fontSize:14,color:gcConnected?'#2e7d32':'#e65100'}}>
+                    {gcConnected?'Connecté à Google Agenda':'Non connecté'}
+                  </div>
+                  {gcConnected&&<div className="text-muted" style={{fontSize:12,marginTop:2}}>Les événements Google s'affichent dans le planning</div>}
+                </div>
+              </div>
+              <div style={{display:'flex',gap:8}}>
+                {gcConnected&&<button className="btn btn-outline btn-sm" disabled={gcSyncing} onClick={async () => {
+                  setGcSyncing(true);
+                  try {
+                    const y=new Date().getFullYear(), m=new Date().getMonth();
+                    const res=await doctorAPI.getGoogleCalendarEvents({start:new Date(y,m,1).toISOString(),end:new Date(y,m+1,0,23,59,59).toISOString()});
+                    setGcEventsCount(res.data.data?.events?.length||0);
+                    setSuccess(true);
+                    setTimeout(()=>setSuccess(false),3000);
+                  } catch(err:any) {
+                    setErrorMsg(err.response?.data?.error||'Erreur de synchronisation');
+                  } finally {setGcSyncing(false);}
+                }} style={{fontSize:11}}>{gcSyncing?'...':'⟳ Synchroniser'}</button>}
+                {!gcConnected
+                  ?<button className="btn btn-sm" onClick={async ()=>{
+                      try {
+                        const res=await doctorAPI.getGoogleAuthUrl();
+                        if(res.data.data?.url) window.open(res.data.data.url,'_self');
+                      } catch {setErrorMsg('Erreur de connexion');}
+                    }} style={{background:'#34a853',color:'white',fontSize:11}}>Connecter</button>
+                  :<button className="btn btn-outline btn-sm" onClick={()=>setConfirmDialog({
+                      message:'Déconnecter Google Agenda ?',
+                      onConfirm:async ()=>{
+                        setConfirmDialog(null);
+                        try {
+                          await doctorAPI.disconnectGoogleCalendar();
+                          setGcConnected(false);
+                        } catch {setErrorMsg('Erreur de déconnexion');}
+                      }
+                    })} style={{borderColor:'#ea4335',color:'#ea4335',fontSize:11}}>Déconnecter</button>}
+              </div>
+            </div>
+          </div>
+
+          {/* ÉTAT DE SANTÉ */}
+          <div className="card">
+            <div className="card-header">
+              <span className="card-title">État du système</span>
+              <button className="btn btn-outline btn-sm" onClick={fetchHealth} disabled={loadingHealth} style={{fontSize:11}}>
+                {loadingHealth?'...':'⟳ Actualiser'}
+              </button>
+            </div>
+            {!health
+              ?<p className="text-muted text-sm">Chargement...</p>
+              :<div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {[
+                  {label:'Backend',value:`${health.checks.backend.status === 'ok' ? '✅' : '❌'} En ligne`,detail:`Uptime: ${Math.floor(health.checks.backend.uptime / 60)}min · ${health.checks.backend.responseTime}ms`},
+                  {label:'Base de données',value:health.checks.database.status === 'ok' ? '✅ Connectée' : '❌ Erreur',detail:`${health.checks.database.responseTime}ms`},
+                  {label:'SMTP',value:health.checks.smtp.configured ? '✅ Configuré' : '⚠️ Non configuré'},
+                ].map(item => (
+                  <div key={item.label} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+                    <div>
+                      <span style={{fontWeight:500}}>{item.label}</span>
+                      {item.detail&&<span className="text-muted" style={{marginLeft:8,fontSize:11}}>{item.detail}</span>}
+                    </div>
+                    <span>{item.value}</span>
+                  </div>
+                ))}
+                <div style={{textAlign:'right',fontSize:10,color:'var(--text-muted)',marginTop:4}}>
+                  {new Date(health.timestamp).toLocaleString('fr-FR')}
+                </div>
+              </div>
+            }
+          </div>
         </div>
 
         <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -156,7 +261,14 @@ const Settings: React.FC = () => {
         </div>
       {errorMsg && <Alert type="error" message={errorMsg} onClose={() => setErrorMsg(null)} autoClose={4000} />}
       </form>
-
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={true}
+          message={confirmDialog.message}
+          onConfirm={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 };

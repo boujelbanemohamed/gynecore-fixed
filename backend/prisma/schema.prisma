@@ -77,6 +77,7 @@ model User {
   secretaries    User[]   @relation("DoctorSecretary")
 
   smtpConfigs      SmtpConfig[]
+  googleCalendarToken GoogleCalendarToken?
 
   @@map("users")
 }
@@ -132,8 +133,11 @@ model Consultation {
   id                  String           @id @default(cuid())
   patientId           String
   patient             Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentId       String?          @unique
+  appointment         Appointment?     @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   date                DateTime
   type                ConsultationType @default(FIRST_VISIT)
+  status              String           @default("ACTIVE")
   chiefComplaint      String?
   symptoms            String?
   clinicalExam        String?
@@ -155,6 +159,8 @@ model Consultation {
   prescriptions       Prescription[]
 
   @@index([date])
+  @@index([patientId])
+  @@index([status])
   @@map("consultations")
 }
 
@@ -172,6 +178,7 @@ model Prescription {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  @@index([patientId])
   @@map("prescriptions")
 }
 
@@ -180,13 +187,15 @@ model Appointment {
   patientId String
   patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
   doctorId  String
-  doctor    User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  doctor    User              @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
   startTime DateTime
   endTime   DateTime
   type      ConsultationType  @default(FIRST_VISIT)
   status    AppointmentStatus @default(SCHEDULED)
   reason    String?
   notes     String?
+  googleEventId String? @unique
+  consultation Consultation?
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
@@ -206,6 +215,7 @@ model Document {
   mimeType  String?
   createdAt DateTime @default(now())
 
+  @@index([patientId])
   @@map("documents")
 }
 
@@ -220,6 +230,7 @@ model Certificate {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
+  @@index([patientId])
   @@map("certificates")
 }
 
@@ -235,6 +246,7 @@ model MedicalLetter {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@index([patientId])
   @@map("medical_letters")
 }
 
@@ -319,4 +331,33 @@ model SmtpConfig {
   updatedAt     DateTime @updatedAt
 
   @@map("smtp_configs")
+}
+
+model HealthAuditLog {
+  id           String   @id @default(cuid())
+  component    String
+  status       String
+  action       String
+  message      String?
+  durationMs   Int?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("health_audit_logs")
+}
+
+model GoogleCalendarToken {
+  id           String    @id @default(cuid())
+  doctorId     String    @unique
+  accessToken  String
+  refreshToken String?
+  scope        String?
+  tokenType    String?
+  expiryDate   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  doctor User @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_tokens")
 }

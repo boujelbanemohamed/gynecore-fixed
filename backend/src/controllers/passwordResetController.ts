@@ -42,7 +42,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       await sendPasswordResetEmail(user.email, resetToken);
     } catch (emailErr) {
       console.error("[forgotPassword] Erreur envoi email, fallback console:", emailErr);
-      console.log(`[RESET-FALLBACK] Token pour ${email}: ${resetToken}`);
+      console.log(`[RESET-FALLBACK] Token genere pour ${email} (verifier la console backend)`);
     }
 
     return res.json({ success: true, message: "Si un compte existe avec cet email, un lien de reinitialisation a ete envoye." });

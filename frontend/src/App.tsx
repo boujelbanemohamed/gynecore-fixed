@@ -1,11 +1,12 @@
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DoctorRoute, PatientRoute, SecretaryRoute, PublicRoute, SuperadminRoute } from './components/shared/RouteGuards';
 import DoctorLayout from './components/doctor/Layout';
 import PatientLayout from './components/patient/Layout';
 import SecretaryLayout from './components/secretary/Layout';
 import SuperadminLayout from './components/superadmin/Layout';
+import { setNavigateFn } from './utils/navigate';
 
 const DoctorLogin = lazy(() => import('./pages/doctor/Login'));
 const Dashboard = lazy(() => import('./pages/doctor/Dashboard'));
@@ -48,9 +49,18 @@ const LazyLoad: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </Suspense>
 );
 
+const NavigateSetter: React.FC = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    setNavigateFn((path: string) => navigate(path));
+  }, [navigate]);
+  return null;
+};
+
 const App: React.FC = () => (
   <AuthProvider>
     <BrowserRouter>
+      <NavigateSetter />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route element={<PublicRoute />}>

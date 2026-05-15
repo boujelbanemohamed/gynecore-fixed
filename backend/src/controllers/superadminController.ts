@@ -2,10 +2,10 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { Role } from '@prisma/client';
 import { prisma } from '../prisma';
+import * as healthService from '../services/healthAutoRecoveryService';
 
 const CONFIG_PATH = path.join(process.cwd(), 'data', 'system-config.json');
 
@@ -203,6 +203,8 @@ export const getSystemSettings = async (_req: Request, res: Response) => {
       RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || '900000',
       RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX || '20',
       FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+      GOOGLE_CALENDAR_SYNC_INTERVAL: process.env.GOOGLE_CALENDAR_SYNC_INTERVAL || '300',
+      HEALTH_CHECK_INTERVAL: process.env.HEALTH_CHECK_INTERVAL || '30',
     };
     Object.keys(fileConfig).forEach((k) => { if (envInfo[k] !== undefined) envInfo[k] = fileConfig[k]; });
     const dbInfo = await prisma.$queryRaw`SELECT version() as version`;
@@ -221,7 +223,8 @@ export const updateSystemSettings = async (req: Request, res: Response) => {
     }
     const allowedKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME', 'SMTP_USER', 'SMTP_PASS',
       'CORS_ORIGIN', 'FRONTEND_URL', 'JWT_EXPIRES_IN', 'JWT_PATIENT_EXPIRES_IN',
-      'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX'];
+      'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX',
+      'GOOGLE_CALENDAR_SYNC_INTERVAL', 'HEALTH_CHECK_INTERVAL'];
     const current = readSystemConfig();
     for (const key of allowedKeys) {
       if (settings[key] !== undefined) current[key] = String(settings[key]);
@@ -237,34 +240,32 @@ export const updateSystemSettings = async (req: Request, res: Response) => {
 export const getSystemHealth = async (_req: Request, res: Response) => {
   try {
     const start = Date.now();
+    const checks = await healthService.runFullCheck();
 
-    let dbStatus = 'ok';
-    let dbResponseTime = 0;
-    let dbVersion = '';
-    try {
-      const dbStart = Date.now();
-      const result = await prisma.$queryRaw`SELECT version() as version`;
-      dbResponseTime = Date.now() - dbStart;
-      dbVersion = String((result as any[])[0]?.version || '');
-    } catch {
-      dbStatus = 'error';
-    }
-
-    let configStatus = 'ok';
-    let configSize = 0;
-    try {
-      if (fs.existsSync(CONFIG_PATH)) {
-        configSize = fs.statSync(CONFIG_PATH).size;
-      } else {
-        configStatus = 'missing';
-      }
-    } catch {
-      configStatus = 'error';
-    }
+    const backendCheck = checks.find(c => c.component === 'backend')!;
+    const frontendCheck = checks.find(c => c.component === 'frontend')!;
+    const dbCheck = checks.find(c => c.component === 'database')!;
+    const configCheck = checks.find(c => c.component === 'config')!;
+    const smtpCheck = checks.find(c => c.component === 'smtp')!;
+    const gcCheck = checks.find(c => c.component === 'googleCalendar')!;
 
     const config = readSystemConfig();
-    const smtpConfigured = !!(config.SMTP_HOST || process.env.SMTP_HOST);
     const smtpHost = (config.SMTP_HOST || process.env.SMTP_HOST || '').replace(/^(.{3}).*(@.*)$/, '$1***$2');
+
+    const configSize = fs.existsSync(CONFIG_PATH) ? fs.statSync(CONFIG_PATH).size : 0;
+
+    let gcTotal = 0, gcConnectedDoctors = 0;
+    const gcDoctors: {id: string; email: string; name: string}[] = [];
+    try {
+      const tokens = await prisma.googleCalendarToken.findMany({
+        select: { doctorId: true, doctor: { select: { email: true, firstName: true, lastName: true } } }
+      });
+      gcTotal = tokens.length;
+      gcConnectedDoctors = tokens.length;
+      for (const t of tokens) {
+        gcDoctors.push({ id: t.doctorId, email: t.doctor.email, name: `${t.doctor.firstName} ${t.doctor.lastName}` });
+      }
+    } catch { /* table may not exist */ }
 
     const totalResponseTime = Date.now() - start;
 
@@ -273,7 +274,7 @@ export const getSystemHealth = async (_req: Request, res: Response) => {
       data: {
         checks: {
           backend: {
-            status: 'ok',
+            status: backendCheck.status,
             uptime: Math.floor(process.uptime()),
             nodeVersion: process.version,
             environment: process.env.NODE_ENV || 'development',
@@ -284,22 +285,50 @@ export const getSystemHealth = async (_req: Request, res: Response) => {
               rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
             },
             responseTime: totalResponseTime,
+            message: backendCheck.message,
+            recoveryAction: backendCheck.recoveryAction,
+            recoverySuccess: backendCheck.recoverySuccess,
           },
           database: {
-            status: dbStatus,
-            responseTime: dbResponseTime,
-            version: dbVersion,
+            status: dbCheck.status,
+            responseTime: dbCheck.durationMs,
+            version: '',
+            message: dbCheck.message,
+            recoveryAction: dbCheck.recoveryAction,
+            recoverySuccess: dbCheck.recoverySuccess,
           },
           systemConfig: {
-            status: configStatus,
+            status: configCheck.status,
             path: CONFIG_PATH,
             size: configSize,
+            message: configCheck.message,
+            recoveryAction: configCheck.recoveryAction,
+            recoverySuccess: configCheck.recoverySuccess,
           },
           smtp: {
-            status: smtpConfigured ? 'ok' : 'warning',
-            configured: smtpConfigured,
+            status: smtpCheck.status,
+            configured: smtpCheck.status === 'ok',
             host: smtpHost,
             fromName: config.SMTP_FROM_NAME || process.env.SMTP_FROM_NAME || 'GyneCare',
+            message: smtpCheck.message,
+            recoveryAction: smtpCheck.recoveryAction,
+            recoverySuccess: smtpCheck.recoverySuccess,
+          },
+          frontend: {
+            status: frontendCheck.status,
+            message: frontendCheck.message,
+            durationMs: frontendCheck.durationMs,
+            recoveryAction: frontendCheck.recoveryAction,
+            recoverySuccess: frontendCheck.recoverySuccess,
+          },
+          googleCalendar: {
+            status: gcCheck.status,
+            connectedDoctors: gcConnectedDoctors,
+            totalTokens: gcTotal,
+            doctors: gcDoctors,
+            message: gcCheck.message,
+            recoveryAction: gcCheck.recoveryAction,
+            recoverySuccess: gcCheck.recoverySuccess,
           },
         },
         timestamp: new Date().toISOString(),
@@ -307,7 +336,67 @@ export const getSystemHealth = async (_req: Request, res: Response) => {
     });
   } catch (err) {
     console.error('[superadmin health]', err);
-    res.status(500).json({ success: false, error: 'Erreur lors de la vérification de santé' });
+    res.status(500).json({ success: false, error: 'Erreur lors de la verification de sante' });
+  }
+};
+
+export const getHealthAuditLogs = async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const component = req.query.component as string | undefined;
+    const action = req.query.action as string | undefined;
+    const dateFrom = req.query.dateFrom as string | undefined;
+    const dateTo = req.query.dateTo as string | undefined;
+
+    const where: any = {};
+    if (component) where.component = component;
+    if (action) where.action = action;
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo) where.createdAt.lte = new Date(dateTo);
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.healthAuditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.healthAuditLog.count({ where }),
+    ]);
+    res.json({
+      success: true,
+      data: {
+        logs,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        limit,
+      },
+    });
+  } catch (err) {
+    console.error('[superadmin getHealthAuditLogs]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+};
+
+export const toggleHealthComponent = async (req: Request, res: Response) => {
+  try {
+    const { component, enabled } = req.body;
+    if (!component || !healthService.ALL_COMPONENTS.includes(component)) {
+      return res.status(400).json({ success: false, error: 'Composant invalide' });
+    }
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'enabled doit etre un booleen' });
+    }
+    const result = await healthService.toggleComponent(component, enabled);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('[superadmin toggleHealthComponent]', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 };
 

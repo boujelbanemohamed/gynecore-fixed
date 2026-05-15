@@ -49,7 +49,7 @@ const DoctorLogin: React.FC = () => {
             <Link to="/forgot-password" style={{ color: '#e91e63', fontSize: 14, textDecoration: 'none' }}>Mot de passe oublié ?</Link>
           </div>
           <div className="login-divider">ou</div>
-          <div className="login-switch">Vous êtes patient ? <Link to="/patient/login">Portail patient →</Link> | Vous êtes secrétaire ? <Link to="/secretary/login">Portail secrétaire →</Link></div>
+          <div className="login-switch">Vous êtes patient ? <Link to="/patient/login">Portail patient →</Link> | Vous êtes secrétaire ? <Link to="/secretary/login">Portail secrétaire →</Link> | <Link to="/superadmin/login">Administration →</Link></div>
         </div>
       </div>
     </div>

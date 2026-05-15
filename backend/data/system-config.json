@@ -1,5 +1,6 @@
 {
   "SMTP_HOST": "smtp.gmail.com",
   "RATE_LIMIT_MAX": "1000",
-  "emailTemplates": {}
+  "emailTemplates": {},
+  "HEALTH_CHECK_INTERVAL": "10"
 }

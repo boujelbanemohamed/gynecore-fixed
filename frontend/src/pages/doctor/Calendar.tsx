@@ -22,6 +22,13 @@ const Calendar: React.FC = () => {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [gcConnected, setGcConnected] = useState(false);
+  const [gcEvents, setGcEvents] = useState<any[]>([]);
+  const [gcConvertedIds, setGcConvertedIds] = useState<Set<string>>(new Set());
+  const [gcLoading, setGcLoading] = useState(false);
+  const [gcLastSync, setGcLastSync] = useState<Date|null>(null);
+  const [gcSyncInterval, setGcSyncInterval] = useState(300);
+  const [convertingGcEventId, setConvertingGcEventId] = useState<string|null>(null); // default 5 min
   const [selected, setSelected] = useState<Date|null>(null);
 
   // Modal state
@@ -57,6 +64,31 @@ const Calendar: React.FC = () => {
     startTime:'', endTime:'', type:'', reason:'', notes:''
   });
 
+  // Check Google Calendar status on mount
+  useEffect(() => {
+      doctorAPI.getGoogleCalendarStatus().then(r => {
+        setGcConnected(r.data.data?.connected || false);
+      }).catch(() => {});
+
+    // Fetch sync interval from doctor health
+    doctorAPI.getHealth().then(r => {
+      const interval = r.data.data?.googleCalendarSyncInterval;
+      if (interval && interval > 0) setGcSyncInterval(interval);
+    }).catch(() => {});
+
+    // Check if returning from OAuth callback
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('google') === 'connected') {
+      setAlertMsg({ type: 'success', text: 'Google Agenda connecté avec succès !' });
+      window.history.replaceState({}, '', window.location.pathname);
+      setGcConnected(true);
+    } else if (params.get('google') === 'error') {
+      const msg = params.get('msg') || 'Erreur lors de la connexion à Google Agenda.';
+      setAlertMsg({ type: 'error', text: decodeURIComponent(msg) });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   useEffect(() => {
     const y=currentDate.getFullYear(), m=currentDate.getMonth();
     const start=new Date(y,m,1), end=new Date(y,m+1,0,23,59,59);
@@ -64,7 +96,33 @@ const Calendar: React.FC = () => {
       .then(r=>setAppointments(r.data.data)).catch(()=>{});
     doctorAPI.getUnavailableSlots({startDate:start.toISOString(),end:end.toISOString()})
       .then(r=>setUnavailSlots(r.data.data.slots||[])).catch(()=>{});
-  }, [currentDate]);
+    // Fetch Google Calendar events if connected
+    if (gcConnected) {
+      setGcLoading(true);
+      doctorAPI.getGoogleCalendarEvents({start:start.toISOString(),end:end.toISOString()})
+        .then(r => { setGcEvents(r.data.data?.events || []); setGcConvertedIds(new Set(r.data.data?.convertedEventIds || [])); setGcLastSync(new Date()); })
+        .catch(() => {})
+        .finally(() => setGcLoading(false));
+    }
+  }, [currentDate, gcConnected]);
+
+  // Auto-sync Google Calendar events
+  useEffect(() => {
+    if (!gcConnected) return;
+    const y=currentDate.getFullYear(), m=currentDate.getMonth();
+    const start=new Date(y,m,1), end=new Date(y,m+1,0,23,59,59);
+    doctorAPI.getGoogleCalendarEvents({start:start.toISOString(),end:end.toISOString()})
+      .then(r => { setGcEvents(r.data.data?.events || []); setGcConvertedIds(new Set(r.data.data?.convertedEventIds || [])); setGcLastSync(new Date()); })
+      .catch(() => {});
+    const intervalId = setInterval(() => {
+      const y=currentDate.getFullYear(), m=currentDate.getMonth();
+      const start=new Date(y,m,1), end=new Date(y,m+1,0,23,59,59);
+      doctorAPI.getGoogleCalendarEvents({start:start.toISOString(),end:end.toISOString()})
+        .then(r => { setGcEvents(r.data.data?.events || []); setGcConvertedIds(new Set(r.data.data?.convertedEventIds || [])); setGcLastSync(new Date()); })
+        .catch(() => {});
+    }, gcSyncInterval * 1000);
+    return () => clearInterval(intervalId);
+  }, [gcConnected, gcSyncInterval, currentDate]);
 
   const y=currentDate.getFullYear(), m=currentDate.getMonth();
   const firstDay=new Date(y,m,1).getDay()||7;
@@ -80,7 +138,14 @@ const Calendar: React.FC = () => {
     const d=new Date(s.startTime);
     return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()===day;
   });
+  const getGcEventsForDay=(day:number)=>gcEvents.filter((e: any)=>{
+    const start = e.start?.dateTime || e.start?.date;
+    if (!start) return false;
+    const d=new Date(start);
+    return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()===day;
+  });
   const selectedUnavail=selected?getUnavailForDay(selected.getDate()):[];
+  const selectedGcEvents=selected?getGcEventsForDay(selected.getDate()):[];
   const months=['Janvier','F\u00e9vrier','Mars','Avril','Mai','Juin','Juillet','Ao\u00fbt','Septembre','Octobre','Novembre','D\u00e9cembre'];
 
   // Search patients
@@ -105,6 +170,42 @@ const Calendar: React.FC = () => {
       startTime: `${dateStr}T09:00`,
       endTime: `${dateStr}T09:30`,
       type: '', reason: '', notes: ''
+    });
+    setSelectedPatient(null);
+    setPatientSearch('');
+    setPatients([]);
+    setShowNewPatient(false);
+    setNewPatient({ firstName:'', lastName:'', email:'', phone:'', dateOfBirth:'', bloodType:'', city:'', allergies:'', contraceptionMethod:'' });
+    setError('');
+    setShowModal(true);
+    setConvertingGcEventId(null);
+  };
+
+  const openConvertModal = (gcEvent: any) => {
+    const start = gcEvent.start?.dateTime || gcEvent.start?.date;
+    const end = gcEvent.end?.dateTime || gcEvent.end?.date;
+    if (!start) return;
+    const startDate = new Date(start);
+    const endDate = end ? new Date(end) : new Date(startDate.getTime() + 30 * 60000);
+    const day = startDate.getDate().toString().padStart(2,'0');
+    const month = (startDate.getMonth()+1).toString().padStart(2,'0');
+    const year = startDate.getFullYear();
+    const dateStr = `${year}-${month}-${day}`;
+    const startStr = `${dateStr}T${startDate.getHours().toString().padStart(2,'0')}:${startDate.getMinutes().toString().padStart(2,'0')}`;
+    const endStr = `${dateStr}T${endDate.getHours().toString().padStart(2,'0')}:${endDate.getMinutes().toString().padStart(2,'0')}`;
+    const parts: string[] = [];
+    parts.push('--- Converti depuis Google Agenda ---');
+    if (gcEvent.summary) parts.push(`Titre: ${gcEvent.summary}`);
+    if (gcEvent.description) parts.push(`Description: ${gcEvent.description}`);
+    if (gcEvent.location) parts.push(`Lieu: ${gcEvent.location}`);
+    parts.push(`---`);
+    setConvertingGcEventId(gcEvent.id);
+    setAptForm({
+      startTime: startStr,
+      endTime: endStr,
+      type: 'FIRST_VISIT',
+      reason: gcEvent.summary || 'Rendez-vous converti depuis Google Agenda',
+      notes: parts.join('\n'),
     });
     setSelectedPatient(null);
     setPatientSearch('');
@@ -212,17 +313,66 @@ const Calendar: React.FC = () => {
         type: aptForm.type || 'FIRST_VISIT',
         reason: aptForm.reason,
         notes: aptForm.notes,
+        googleEventId: convertingGcEventId,
       });
+      setConvertingGcEventId(null);
       setShowModal(false);
-      // Refresh appointments
+      // Refresh appointments + update converted GC IDs
       const startY=currentDate.getFullYear(), startM=currentDate.getMonth();
       const start=new Date(startY,startM,1), end=new Date(startY,startM+1,0,23,59,59);
       doctorAPI.getAppointments({start:start.toISOString(),end:end.toISOString()})
         .then(r=>setAppointments(r.data.data)).catch(()=>{});
+      if (convertingGcEventId) {
+        setGcConvertedIds(prev => new Set(prev).add(convertingGcEventId!));
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erreur lors de la cr\u00e9ation du rendez-vous.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Google Calendar handlers
+  const handleConnectGoogle = async () => {
+    try {
+      const res = await doctorAPI.getGoogleAuthUrl();
+      const url = res.data.data?.url;
+      if (url) window.open(url, '_self');
+    } catch {
+      setAlertMsg({ type: 'error', text: 'Erreur lors de la connexion à Google Agenda.' });
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    setConfirmDialog({
+      message: 'Déconnecter Google Agenda ? Les événements ne seront plus affichés.',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await doctorAPI.disconnectGoogleCalendar();
+          setGcConnected(false);
+          setGcEvents([]);
+          setAlertMsg({ type: 'success', text: 'Google Agenda déconnecté.' });
+        } catch {
+          setAlertMsg({ type: 'error', text: 'Erreur lors de la déconnexion.' });
+        }
+      }
+    });
+  };
+
+  const handleRefreshGoogle = async () => {
+    setGcLoading(true);
+    const y=currentDate.getFullYear(), m=currentDate.getMonth();
+    const start=new Date(y,m,1), end=new Date(y,m+1,0,23,59,59);
+    try {
+      const res = await doctorAPI.getGoogleCalendarEvents({start:start.toISOString(),end:end.toISOString()});
+      setGcEvents(res.data.data?.events || []);
+      setGcLastSync(new Date());
+      setAlertMsg({ type: 'success', text: 'Google Agenda synchronisé.' });
+    } catch {
+      setAlertMsg({ type: 'error', text: 'Erreur de synchronisation Google Agenda.' });
+    } finally {
+      setGcLoading(false);
     }
   };
 
@@ -245,16 +395,50 @@ const Calendar: React.FC = () => {
     if (status === 'SCHEDULED') {
       buttons.push({label:'Confirmer', action:()=>handleUpdateStatus(aptId,'CONFIRMED'), className:'btn btn-sm'});
       buttons.push({label:'Annuler', action:()=>handleUpdateStatus(aptId,'CANCELLED'), className:'btn btn-outline btn-sm'});
-      buttons.push({label:'Non pr\u00e9sent', action:()=>handleUpdateStatus(aptId,'NO_SHOW'), className:'btn btn-outline btn-sm'});
+      buttons.push({label:'Non present', action:()=>handleUpdateStatus(aptId,'NO_SHOW'), className:'btn btn-outline btn-sm'});
     } else if (status === 'CONFIRMED') {
-      buttons.push({label:'Effectu\u00e9', action:()=>handleUpdateStatus(aptId,'COMPLETED'), className:'btn btn-sm'});
+      buttons.push({label:'Effectue', action:()=>handleUpdateStatus(aptId,'COMPLETED'), className:'btn btn-sm'});
       buttons.push({label:'Annuler', action:()=>handleUpdateStatus(aptId,'CANCELLED'), className:'btn btn-outline btn-sm'});
-      buttons.push({label:'Non pr\u00e9sent', action:()=>handleUpdateStatus(aptId,'NO_SHOW'), className:'btn btn-outline btn-sm'});
+      buttons.push({label:'Non present', action:()=>handleUpdateStatus(aptId,'NO_SHOW'), className:'btn btn-outline btn-sm'});
+    } else if (status === 'COMPLETED') {
+      buttons.push({label:'Reouvrir', action:()=>handleUpdateStatus(aptId,'CONFIRMED'), className:'btn btn-outline btn-sm'});
+    } else if (status === 'CANCELLED') {
+      buttons.push({label:'Replanifier', action:()=>handleUpdateStatus(aptId,'SCHEDULED'), className:'btn btn-outline btn-sm'});
+    } else if (status === 'NO_SHOW') {
+      buttons.push({label:'Replanifier', action:()=>handleUpdateStatus(aptId,'SCHEDULED'), className:'btn btn-outline btn-sm'});
+      buttons.push({label:'Annuler', action:()=>handleUpdateStatus(aptId,'CANCELLED'), className:'btn btn-outline btn-sm'});
     }
     return buttons;
   };
 
   return (
+    <>
+      {/* GOOGLE CALENDAR STATUS BAR */}
+      <div style={{
+        display:'flex',alignItems:'center',justifyContent:'space-between',
+        padding:'10px 16px',marginBottom:16,borderRadius:'var(--radius-sm)',
+        background:gcConnected?'#f1f8e9':'#fff8e1',
+        border:gcConnected?'1px solid #c8e6c9':'1px solid #ffe082',
+        fontSize:13
+      }}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span>{gcConnected?'✅':'⚠️'}</span>
+          <span style={{fontWeight:500,color:gcConnected?'#2e7d32':'#e65100'}}>
+            Google Agenda {gcConnected?'connecté':'non connecté'}
+          </span>
+          {gcConnected&&<span className="badge" style={{background:'#e8f5e9',color:'#2e7d32',fontSize:11}}>{gcEvents.length} événements</span>}
+          {gcConnected&&gcLastSync&&<span style={{fontSize:11,color:'#558b2f'}}>Dernière synchro : {gcLastSync.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>}
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          {gcConnected&&<button className="btn btn-outline btn-sm" onClick={handleRefreshGoogle} disabled={gcLoading} style={{fontSize:11}}>
+            {gcLoading?'⟳ Synchronisation...':'⟳ Synchroniser'}
+          </button>}
+          {!gcConnected
+            ?<button className="btn btn-sm" onClick={handleConnectGoogle} style={{background:'#34a853',color:'white',fontSize:11}}>+ Connecter Google Agenda</button>
+            :<button className="btn btn-outline btn-sm" onClick={handleDisconnectGoogle} style={{borderColor:'#ea4335',color:'#ea4335',fontSize:11}}>Déconnecter</button>}
+        </div>
+      </div>
+
     <div className="grid-2" style={{alignItems:'start'}}>
       {/* CALENDAR GRID */}
       <div className="card">
@@ -275,6 +459,8 @@ const Calendar: React.FC = () => {
             const apts=getApts(day);
             const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===day;
             const isSel=selected&&selected.getFullYear()===y&&selected.getMonth()===m&&selected.getDate()===day;
+            const gcDayEvents=getGcEventsForDay(day);
+            const unconvertedGcDayEvents=gcDayEvents.filter((e:any)=>!gcConvertedIds.has(e.id));
             return (
               <div key={day} onClick={()=>setSelected(new Date(y,m,day))}
                 style={{padding:'6px 4px',minHeight:48,borderRadius:6,cursor:'pointer',
@@ -290,6 +476,9 @@ const Calendar: React.FC = () => {
                   {getUnavailForDay(day).length>0&&
                     <div style={{height:4,borderRadius:2,background:isSel?'rgba(255,200,200,0.8)':'#fc8181'}}/>
                   }
+                  {unconvertedGcDayEvents.length>0&&
+                    <div style={{height:4,borderRadius:2,background:isSel?'rgba(255,255,255,0.5)':'#1a73e8'}}/>
+                  }
                   {apts.length>2&&<div style={{fontSize:9,color:isSel?'rgba(255,255,255,0.8)':'var(--text-muted)',textAlign:'center'}}>+{apts.length-2}</div>}
                 </div>
               </div>
@@ -304,6 +493,8 @@ const Calendar: React.FC = () => {
           <span className="card-title">{selected?selected.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}):'S\u00e9lectionnez un jour'}</span>
           <div style={{display:'flex',gap:8,alignItems:'center'}}>
             {selected&&<span className="badge badge-info">{selectedApts.length} RDV</span>}{selected&&selectedUnavail.length>0&&<span className="badge" style={{background:"#fff5f5",color:"#c53030",border:"1px solid #fed7d7",fontSize:11,marginLeft:4}}>{selectedUnavail.length} Indisp.</span>}
+            {selected&&gcLoading&&<span className="badge badge-muted">Google...</span>}
+            {selected&&!gcLoading&&selectedGcEvents.filter((e:any)=>!gcConvertedIds.has(e.id)).length>0&&<span className="badge" style={{background:"#e8f0fe",color:"#1a73e8",border:"1px solid #a8d4fc",fontSize:11}}>{selectedGcEvents.filter((e:any)=>!gcConvertedIds.has(e.id)).length} Google</span>}
             
             {selected&&<button className="btn btn-outline btn-sm" onClick={openUnavailModal} style={{borderColor:'#fed7d7',color:'#c53030'}}>+ Indisponibilite</button>}
             {selected&&<button className="btn btn-primary btn-sm" onClick={openNewAptModal}>+ Nouveau RDV</button>}
@@ -312,7 +503,7 @@ const Calendar: React.FC = () => {
 
         {!selected
           ?<p className="text-muted text-sm">Cliquez sur un jour pour voir les rendez-vous</p>
-          :!selectedApts.length
+          :!selectedApts.length && !selectedUnavail.length && !selectedGcEvents.length
             ?<div className="empty-state" style={{padding:'24px 0'}}>
                 <div className="empty-icon">📅</div>
                 <p>Aucun rendez-vous</p>
@@ -321,8 +512,40 @@ const Calendar: React.FC = () => {
               </div>
             :<div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  {[...selectedApts,...selectedUnavail].sort((a:any,b:any)=>new Date(a.startTime).getTime()-new Date(b.startTime).getTime()).map(item=>(
-                    item.patient
+                  {[...selectedApts,...selectedUnavail,...selectedGcEvents.map((e:any)=>({...e,_isGoogle:true}))]
+                    .sort((a:any,b:any)=>new Date(a.startTime||a.start?.dateTime||a.start?.date).getTime()-new Date(b.startTime||b.start?.dateTime||b.start?.date).getTime())
+                    .map(item=>{
+                    if (item._isGoogle) {
+                      const start = item.start?.dateTime || item.start?.date;
+                      const end = item.end?.dateTime || item.end?.date;
+                      return (
+                        <div key={item.id} style={{padding:'12px 14px',border:'1px solid #a8d4fc',borderLeft:'3px solid #1a73e8',borderRadius:'var(--radius-sm)',backgroundColor:'#f0f6ff'}}>
+                          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                            <div>
+                              <div style={{fontWeight:500,fontSize:14,color:'#1a73e8'}}>
+                                <span style={{marginRight:6}}>📅</span>{item.summary || 'Événement'}
+                              </div>
+                              <div className="text-sm" style={{marginTop:3,color:'#4a8c4a'}}>
+                                {start&&new Date(start).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+                                {end&&` - ${new Date(end).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`}
+                              </div>
+                              {item.description&&<div className="text-sm" style={{marginTop:4,color:'var(--text-secondary)'}}>{item.description}</div>}
+                              {item.location&&<div className="text-sm" style={{marginTop:2,color:'var(--text-muted)'}}>📍 {item.location}</div>}
+                            </div>
+                            <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'flex-end'}}>
+                              <span className="badge" style={{background:'#e8f0fe',color:'#1a73e8',border:'1px solid #a8d4fc',fontSize:10}}>Google</span>
+                              {gcConvertedIds.has(item.id)
+                                ? <span className="badge" style={{background:'#e8f5e9',color:'#2e7d32',border:'1px solid #c8e6c9',fontSize:10,whiteSpace:'nowrap'}}>Converti ✓</span>
+                                : <button className="btn btn-sm" onClick={() => openConvertModal(item)} style={{background:'#1a73e8',color:'white',fontSize:10,whiteSpace:'nowrap'}}>
+                                    + Convertir en RDV
+                                  </button>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return item.patient
                     ? <div key={item.id} style={{padding:'12px 14px',border:'1px solid var(--border)',borderLeft:'3px solid var(--primary)',borderRadius:'var(--radius-sm)'}}>
                         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                           <div>
@@ -359,7 +582,7 @@ const Calendar: React.FC = () => {
                           <button className="btn btn-outline btn-sm" onClick={()=>handleDeleteUnavail(item.id)} style={{borderColor:'#fc8181',color:'#c53030',fontSize:11}}>Supprimer</button>
                         </div>
                       </div>
-                  ))}
+                  })}
                 </div>
                 <button className="btn btn-primary" style={{marginTop:16,width:'100%'}} onClick={openNewAptModal}>+ Ajouter un rendez-vous</button>
               </div>
@@ -368,11 +591,11 @@ const Calendar: React.FC = () => {
 
       {/* ===== MODAL NOUVEAU RENDEZ-VOUS ===== */}
       {showModal && (
-        <div className="modal-overlay" onClick={()=>!loading&&setShowModal(false)}>
+        <div className="modal-overlay" onClick={()=>!loading&&(setShowModal(false),setConvertingGcEventId(null))}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:580}}>
             <div className="modal-header">
               <h3>Nouveau rendez-vous</h3>
-              <button className="btn-close" onClick={()=>!loading&&setShowModal(false)}>×</button>
+              <button className="btn-close" onClick={()=>!loading&&(setShowModal(false),setConvertingGcEventId(null))}>×</button>
             </div>
             <div className="modal-body">
               {error && <div className="alert alert-error" style={{marginBottom:16}}>{error}</div>}
@@ -566,6 +789,7 @@ const Calendar: React.FC = () => {
         <Alert type={alertMsg.type} message={alertMsg.text} onClose={() => setAlertMsg(null)} autoClose={4000} />
       )}
     </div>
+    </>
   );
 };
 export default Calendar;

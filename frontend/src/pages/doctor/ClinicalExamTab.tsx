@@ -69,6 +69,11 @@ const OptionSelector: React.FC<{
 
 const fileUrl = (base: string, path: string) => base.replace(/\/api$/, '') + path;
 
+const escapeHtml = (str: any) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
+
 const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctorProfile?: any; API_BASE?: string }> = ({ patientId, patientName, doctorProfile, API_BASE }) => {
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,11 +153,11 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctor
       doc.open();
       doc.write('<!DOCTYPE html><html><head><style>' + PRINT_CSS + '</style></head><body style="background:white;">' + htmlContent + '</body></html>');
       doc.close();
-      setTimeout(() => { try { (iframe.contentWindow as any)?.focus(); (iframe.contentWindow as any)?.print(); } catch(e) {} }, 800);
-      const cleanup = () => { try { document.body.removeChild(iframe); } catch {} window.removeEventListener('afterprint', cleanup); };
+      setTimeout(() => { try { (iframe.contentWindow as any)?.focus(); (iframe.contentWindow as any)?.print(); } catch(e) { console.error('Print error:', e); } }, 800);
+      const cleanup = () => { try { document.body.removeChild(iframe); } catch(e) { console.error('Cleanup error:', e); } window.removeEventListener('afterprint', cleanup); };
       window.addEventListener('afterprint', cleanup);
       setTimeout(cleanup, 60000);
-    } catch(e) {}
+    } catch(e) { console.error('printInIframe error:', e); }
   };
 
   const handlePrint = async (ex: any) => {
@@ -179,28 +184,28 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctor
         if (!rows) return '';
         return '<div class="exam-section"><div class="exam-section-title">' + title + '</div><table class="exam-table"><tbody>' + rows + '</tbody></table></div>';
       };
-      const row = (label: string, val: any) => val ? '<tr><td style="font-weight:600;color:#1a5c4a;width:45%;padding:5px 10px;">' + label + '</td><td style="padding:5px 10px;">' + val + '</td></tr>' : '';
+      const row = (label: string, val: any) => val ? '<tr><td style="font-weight:600;color:#1a5c4a;width:45%;padding:5px 10px;">' + label + '</td><td style="padding:5px 10px;">' + escapeHtml(val) + '</td></tr>' : '';
 
       const html = '<div>' +
         '<div class="rx-header">' + logoHtml +
         '<div class="rx-info">' +
-        '<div class="rx-clinic-name">' + (dp.clinicName||'') + '</div>' +
-        '<h2>Dr ' + (dp.lastName||'') + ' ' + (dp.firstName||'') + '</h2>' +
-        '<div class="rx-specialty">' + (dp.specialization||'Gynecologie-Obstetrique') + '</div>' +
-        '<div class="rx-services">' + (dp.services||'') + '</div>' +
-        '<div class="rx-contact">' + (dp.phone||'') + (dp.email?' | ':'') + (dp.email||'') + '</div>' +
+        '<div class="rx-clinic-name">' + escapeHtml(dp.clinicName||'') + '</div>' +
+        '<h2>Dr ' + escapeHtml(dp.lastName||'') + ' ' + escapeHtml(dp.firstName||'') + '</h2>' +
+        '<div class="rx-specialty">' + escapeHtml(dp.specialization||'Gynecologie-Obstetrique') + '</div>' +
+        '<div class="rx-services">' + escapeHtml(dp.services||'') + '</div>' +
+        '<div class="rx-contact">' + escapeHtml(dp.phone||'') + (dp.email?' | ':'') + escapeHtml(dp.email||'') + '</div>' +
         '</div></div>' +
         '<div class="rx-title">Examen Clinique</div>' +
-        '<div class="rx-patient"><div><strong>Patiente :</strong> ' + patientName + '</div><div><strong>Date :</strong> ' + d + '</div></div>' +
-        '<div class="rx-date-place">Fait a ' + (dp.city||'') + ', le ' + d + '</div>' +
+        '<div class="rx-patient"><div><strong>Patiente :</strong> ' + escapeHtml(patientName) + '</div><div><strong>Date :</strong> ' + d + '</div></div>' +
+        '<div class="rx-date-place">Fait a ' + escapeHtml(dp.city||'') + ', le ' + d + '</div>' +
         sec('Constantes', row('Poids', ex.weight ? ex.weight+' kg' : '') + row('Taille', ex.height ? ex.height+' cm' : '') + row('IMC', calcImc ? calcImc+' kg/m2' : '') + row('TA', ex.bloodPressure) + row('Pouls', ex.heartRate ? ex.heartRate+' bpm' : '') + row('Temperature', ex.temperature ? ex.temperature+' C' : '')) +
         sec('Examen general', row('Etat general', ex.generalState) + row('Conjonctives', ex.conjonctives) + row('Oedemes', ex.oedemes)) +
         sec('Cardio-respiratoire', row('Auscultation cardiaque', ex.cardiacAuscultation) + row('Auscultation pulmonaire', ex.pulmonaryAuscultation)) +
         sec('Abdomino-pelvien', row('Abdomen', ex.abdomen) + row('Uterus', ex.uterusState) + row('Hauteur uterine', ex.uterineHeight ? ex.uterineHeight+' cm' : '') + row('Presentation', ex.presentation) + row('BCF', ex.bcf) + row('Annexes', ex.adnexa)) +
         sec('Examen au speculum / Toucher vaginal', row('Col uterin', ex.cervixAspect) + row('Vagin / Pertes', ex.vaginalDischarge) + row('Dilatation', ex.dilatation) + row('Effacement', ex.effacement) + row('Consistance', ex.consistency) + row('Hauteur presentation', ex.presentationHeight)) +
         sec('Examen des seins', row('Inspection / Palpation', ex.breastExam)) +
-        (ex.clinicalConclusion ? '<div style="margin:10px 0;padding:10px 14px;background:#fef9ef;border-left:4px solid #e67e22;border-radius:0 6px 6px 0;font-size:12px;"><strong>Conclusion :</strong> ' + ex.clinicalConclusion + '</div>' : '') +
-        (ex.notes ? '<div style="margin:8px 0;font-size:11px;color:#666;"><em>Notes : ' + ex.notes + '</em></div>' : '') +
+        (ex.clinicalConclusion ? '<div style="margin:10px 0;padding:10px 14px;background:#fef9ef;border-left:4px solid #e67e22;border-radius:0 6px 6px 0;font-size:12px;"><strong>Conclusion :</strong> ' + escapeHtml(ex.clinicalConclusion) + '</div>' : '') +
+        (ex.notes ? '<div style="margin:8px 0;font-size:11px;color:#666;"><em>Notes : ' + escapeHtml(ex.notes) + '</em></div>' : '') +
         '<div class="rx-footer"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>';
       printInIframe(html);
     } catch(e) { console.error('Print error:', e); }

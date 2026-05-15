@@ -13,7 +13,7 @@ cat > /tmp/gynecare-start-backend.sh << BEOF
 #!/bin/bash
 cd "$WORKSPACE/backend"
 echo "DATABASE_URL=$DBURL" > .env
-echo "JWT_SECRET=jenkins-build-secret" >> .env
+echo "JWT_SECRET=$(openssl rand -hex 64)" >> .env
 echo "JWT_EXPIRES_IN=24h" >> .env
 echo "PORT=4000" >> .env
 echo "NODE_ENV=production" >> .env

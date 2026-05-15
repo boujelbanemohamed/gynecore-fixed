@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI } from '../services/api';
+import { navigate } from '../utils/navigate';
 
 export type UserRole = 'DOCTOR' | 'ASSISTANT' | 'SECRETARY' | 'PATIENT' | 'SUPERADMIN';
 export interface AuthUser { id: string; email: string; firstName: string; lastName: string; role: UserRole; patientId?: string; doctorId?: string; }
@@ -64,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const isSuper = user?.role === 'SUPERADMIN';
     localStorage.removeItem('token');
     setToken(null); setUser(null);
-    window.location.href = isSuper ? '/superadmin/login' : isPatient ? '/patient/login' : isSec ? '/secretary/login' : '/login';
+    navigate(isSuper ? '/superadmin/login' : isPatient ? '/patient/login' : isSec ? '/secretary/login' : '/login');
   };
 
   return (

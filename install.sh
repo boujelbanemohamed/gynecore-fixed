@@ -71,7 +71,7 @@ echo -e "${GREEN}  Dépendances OK${NC}"
 echo -e "${YELLOW}[5/7] Configuration .env...${NC}"
 cat > backend/.env << EOF
 DATABASE_URL="postgresql://$(whoami)@localhost:5432/gynecare_db"
-JWT_SECRET="gynecare-super-secret-jwt-key-2024-production-ok"
+JWT_SECRET="dev-$(openssl rand -hex 32)"
 JWT_EXPIRES_IN="24h"
 JWT_PATIENT_EXPIRES_IN="12h"
 PORT=4000

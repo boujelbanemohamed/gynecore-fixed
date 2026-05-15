@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const SuperadminLogin: React.FC = () => {
@@ -27,18 +27,18 @@ const SuperadminLogin: React.FC = () => {
   return (
     <div className="login-page">
       <div className="login-left">
-        <div className="login-brand">
-          <div className="login-logo">🛡️</div>
-          <h1>GyneCare</h1>
-          <p className="login-subtitle">Administration</p>
+        <h1>Gyne<span>Care</span></h1>
+        <p>Administration système — gestion des utilisateurs, établissements et paramètres.</p>
+        <div className="login-features">
+          {[['🛡️','Gestion des accès'],['🏥','Établissements'],['👥','Utilisateurs'],['⚙️','Configuration']].map(([icon,text]) => (
+            <div className="login-feature" key={text}><div className="login-feature-icon">{icon}</div>{text}</div>
+          ))}
         </div>
       </div>
       <div className="login-right">
-        <div className="login-form-container">
+        <div className="login-form-box">
           <h2>Accès SuperAdmin</h2>
-          <p style={{ color: '#666', marginBottom: 24, fontSize: 14 }}>
-            Espace réservé aux administrateurs du système
-          </p>
+          <p>Espace réservé aux administrateurs du système</p>
           {error && <div className="alert alert-error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -55,9 +55,8 @@ const SuperadminLogin: React.FC = () => {
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#999' }}>
-            <a href="/login" style={{ color: '#666' }}>← Portail médecin</a>
-          </div>
+          <div className="login-divider">ou</div>
+          <div className="login-switch">Vous êtes médecin ? <Link to="/login">Espace médical →</Link> | Vous êtes patient ? <Link to="/patient/login">Portail patient →</Link> | Vous êtes secrétaire ? <Link to="/secretary/login">Portail secrétaire →</Link></div>
         </div>
       </div>
     </div>

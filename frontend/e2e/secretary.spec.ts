@@ -297,7 +297,7 @@ test.describe('Doctor-Secretary Cross Verification', () => {
   test('TC19 - Doctor appointment status visible to secretary', async ({ page }) => {
     test.setTimeout(60000);
 
-    // 1. Doctor logs in and gets first appointment
+    // 1. Doctor logs in
     const docLoginResp = await page.request.post('http://localhost:4000/api/auth/login', {
       data: { email: DOCTOR_EMAIL, password: DOCTOR_PASSWORD }
     });
@@ -305,33 +305,51 @@ test.describe('Doctor-Secretary Cross Verification', () => {
     const docToken = docLoginData.data?.token || docLoginData.token;
     expect(docToken).toBeTruthy();
 
-    // 2. Fetch doctor appointments
-    const apptsResp = await page.request.get('http://localhost:4000/api/doctor/appointments', {
+    // 2. Create a fresh appointment via doctor API so status is SCHEDULED
+    const patientsResp = await page.request.get('http://localhost:4000/api/doctor/patients', {
       headers: { 'Authorization': 'Bearer ' + docToken }
     });
-    const apptsData = await apptsResp.json();
-    const apptsList: any[] = apptsData.data?.appointments || apptsData.data || [];
-    expect(apptsList.length).toBeGreaterThan(0);
+    const patientsData = await patientsResp.json();
+    const patientsList = patientsData.data?.patients || [];
+    expect(patientsList.length).toBeGreaterThan(0);
+    const firstPatient = patientsList[0];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const createResp = await page.request.post('http://localhost:4000/api/doctor/appointments', {
+      headers: { 'Authorization': 'Bearer ' + docToken, 'Content-Type': 'application/json' },
+      data: {
+        patientId: firstPatient.id,
+        startTime: tomorrow.toISOString().split('T')[0] + 'T10:00:00.000Z',
+        endTime: tomorrow.toISOString().split('T')[0] + 'T10:30:00.000Z',
+        type: 'FOLLOW_UP',
+        reason: 'Test E2E status change',
+        status: 'SCHEDULED',
+      }
+    });
+    const createData = await createResp.json();
+    const newApptId = createData.data?.id;
+    expect(newApptId).toBeTruthy();
+    console.log('Created appointment:', newApptId);
 
-    // 3. Pick an appointment with mutable status (SCHEDULED or CONFIRMED)
-    const targetAppt = apptsList.find((a: any) => a.status === 'SCHEDULED' || a.status === 'CONFIRMED') || apptsList[0];
-    const updateResp = await page.request.fetch(
-      'http://localhost:4000/api/doctor/appointments/' + targetAppt.id + '/status',
+    // 3. Cancel the newly created appointment
+    const updateResp = await page.request.patch(
+      'http://localhost:4000/api/doctor/appointments/' + newApptId + '/status',
       {
-        method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + docToken, 'Content-Type': 'application/json' },
         data: { status: 'CANCELLED' }
       }
     );
+    const updateBody = await updateResp.json();
+    console.log('Update response:', updateResp.status(), JSON.stringify(updateBody));
     expect(updateResp.status()).toBe(200);
 
     // 4. Verify the appointment status is now CANCELLED via doctor API
-    const verifyResp = await page.request.get('http://localhost:4000/api/doctor/appointments', {
+    const verifyResp = await page.request.get('http://localhost:4000/api/doctor/appointments?limit=100', {
       headers: { 'Authorization': 'Bearer ' + docToken }
     });
     const verifyData = await verifyResp.json();
     const verifyList = verifyData.data?.appointments || verifyData.data || [];
-    const foundUpdated = verifyList.some((a: any) => a.id === targetAppt.id && a.status === 'CANCELLED');
+    const foundUpdated = verifyList.some((a: any) => a.id === newApptId && a.status === 'CANCELLED');
     expect(foundUpdated).toBeTruthy();
   });
 

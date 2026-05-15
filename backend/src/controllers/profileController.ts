@@ -2,6 +2,38 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../prisma';
+import fs from 'fs';
+import path from 'path';
+
+const CONFIG_PATH = path.join(process.cwd(), 'data', 'system-config.json');
+function readSystemConfig(): Record<string, any> {
+  try { return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')); } catch { return {}; }
+}
+
+export const getHealth = async (_req: Request, res: Response) => {
+  try {
+    const start = Date.now();
+    let dbStatus = 'ok', dbResponseTime = 0;
+    try {
+      const dbStart = Date.now();
+      await prisma.$queryRaw`SELECT 1`;
+      dbResponseTime = Date.now() - dbStart;
+    } catch { dbStatus = 'error'; }
+    const totalResponseTime = Date.now() - start;
+    const config = readSystemConfig();
+    const smtpConfigured = !!(config.SMTP_HOST || process.env.SMTP_HOST);
+    const syncInterval = parseInt(config.GOOGLE_CALENDAR_SYNC_INTERVAL || process.env.GOOGLE_CALENDAR_SYNC_INTERVAL || '300', 10);
+    res.json({ success: true, data: {
+      checks: {
+        backend: { status: 'ok', uptime: Math.floor(process.uptime()), responseTime: totalResponseTime },
+        database: { status: dbStatus, responseTime: dbResponseTime },
+        smtp: { configured: smtpConfigured },
+      },
+      googleCalendarSyncInterval: syncInterval,
+      timestamp: new Date().toISOString(),
+    }});
+  } catch { res.status(500).json({ success: false, error: 'Erreur de vérification' }); }
+};
 
 const updateProfileSchema = z.object({
   email:          z.string().email().optional(),

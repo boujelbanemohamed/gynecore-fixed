@@ -20,6 +20,7 @@ import * as smtpController from '../controllers/smtpController';
 import * as templateController from '../controllers/templateController';
 import { uploadLogo, uploadDocument } from '../middleware/upload';
 import * as superadminController from '../controllers/superadminController';
+import * as googleCalendarController from '../controllers/googleCalendarController';
 
 const router = Router();
 
@@ -52,6 +53,8 @@ router.delete('/doctor/patients/:id', authenticate, authorizeDoctor, patientCont
 router.get('/doctor/consultations', authenticate, authorizeDoctor, consultationController.getConsultations);
 router.post('/doctor/consultations', authenticate, authorizeDoctor, consultationController.createConsultation);
 router.put('/doctor/consultations/:id', authenticate, authorizeDoctor, consultationController.updateConsultation);
+router.put('/doctor/consultations/:id/cancel', authenticate, authorizeDoctor, consultationController.cancelConsultation);
+router.delete('/doctor/consultations/:id', authenticate, authorizeDoctor, consultationController.deleteConsultation);
 
 router.get('/doctor/appointments', authenticate, authorizeDoctor, appointmentController.getAppointments);
 router.post('/doctor/appointments', authenticate, authorizeDoctor, appointmentController.createAppointment);
@@ -80,6 +83,7 @@ router.post('/doctor/medical-letters', authenticate, authorizeDoctor, medicalLet
 router.put('/doctor/medical-letters/:id', authenticate, authorizeDoctor, medicalLetterController.updateMedicalLetter);
 router.delete('/doctor/medical-letters/:id', authenticate, authorizeDoctor, medicalLetterController.deleteMedicalLetter);
 
+router.get('/doctor/health', authenticate, authorizeDoctor, profileController.getHealth);
 router.get('/doctor/profile', authenticate, authorizeDoctor, profileController.getProfile);
 router.put('/doctor/profile', authenticate, authorizeDoctor, profileController.updateProfile);
 router.post('/doctor/profile/logo', authenticate, authorizeDoctor, uploadLogo.single('file'), profileController.uploadLogo);
@@ -122,6 +126,13 @@ router.delete('/doctor/smtp-config', authenticate, authorizeDoctor, smtpControll
 
 router.get('/secretary/unavailable-slots', authenticate, authorizeSecretary, unavailableSlotController.getUnavailableSlots);
 
+// Google Calendar
+router.get('/doctor/google-calendar/auth-url', authenticate, authorizeDoctor, googleCalendarController.getAuthUrl);
+router.get('/doctor/google-calendar/callback', googleCalendarController.handleCallback);
+router.get('/doctor/google-calendar/status', authenticate, authorizeDoctor, googleCalendarController.getStatus);
+router.get('/doctor/google-calendar/events', authenticate, authorizeDoctor, googleCalendarController.getEvents);
+router.delete('/doctor/google-calendar/disconnect', authenticate, authorizeDoctor, googleCalendarController.disconnect);
+
 // ===== Superadmin routes =====
 router.post('/auth/superadmin/login', authController.loginSuperadmin);
 router.get('/superadmin/dashboard', authenticate, authorizeSuperadmin, superadminController.getDashboard);
@@ -138,6 +149,8 @@ router.patch('/superadmin/secretaries/:id/toggle-status', authenticate, authoriz
 router.put('/superadmin/profile', authenticate, authorizeSuperadmin, authController.updateSuperadminProfile);
 router.put('/superadmin/password', authenticate, authorizeSuperadmin, superadminController.changeSuperadminPassword);
 router.get('/superadmin/health', authenticate, authorizeSuperadmin, superadminController.getSystemHealth);
+router.get('/superadmin/health-audit', authenticate, authorizeSuperadmin, superadminController.getHealthAuditLogs);
+router.post('/superadmin/health/toggle', authenticate, authorizeSuperadmin, superadminController.toggleHealthComponent);
 router.get('/superadmin/doctors/:id/patients', authenticate, authorizeSuperadmin, superadminController.getDoctorPatients);
 router.get('/superadmin/patients/:id', authenticate, authorizeSuperadmin, superadminController.getPatientDetail);
 router.post('/superadmin/patients/:id/reset-password', authenticate, authorizeSuperadmin, superadminController.resetPatientPassword);

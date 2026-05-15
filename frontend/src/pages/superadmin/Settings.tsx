@@ -15,11 +15,28 @@ const envLabels: Record<string, string> = {
   SMTP_FROM_NAME: 'Nom expéditeur',
   RATE_LIMIT_WINDOW_MS: 'Fenêtre rate-limit (ms)',
   RATE_LIMIT_MAX: 'Max requêtes rate-limit',
+  GOOGLE_CALENDAR_SYNC_INTERVAL: 'Délai synchro Google Agenda (secondes)',
+  HEALTH_CHECK_INTERVAL: 'Délai vérification santé (secondes)',
 };
 
 const editableKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME', 'SMTP_USER', 'SMTP_PASS',
   'CORS_ORIGIN', 'FRONTEND_URL', 'JWT_EXPIRES_IN', 'JWT_PATIENT_EXPIRES_IN',
-  'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX'];
+  'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX', 'GOOGLE_CALENDAR_SYNC_INTERVAL', 'HEALTH_CHECK_INTERVAL'];
+
+const sections = [
+  {
+    title: 'SMTP',
+    keys: ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME'],
+  },
+  {
+    title: 'Sécurité',
+    keys: ['CORS_ORIGIN', 'FRONTEND_URL', 'JWT_EXPIRES_IN', 'JWT_PATIENT_EXPIRES_IN', 'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX'],
+  },
+  {
+    title: 'Synchronisation',
+    keys: ['GOOGLE_CALENDAR_SYNC_INTERVAL', 'HEALTH_CHECK_INTERVAL'],
+  },
+];
 
 const SuperadminSettings: React.FC = () => {
   const [settings, setSettings] = useState<any>(null);
@@ -65,48 +82,51 @@ const SuperadminSettings: React.FC = () => {
         </div>
       )}
 
-      <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Variables d'environnement</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {editableKeys.map((key) => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <label style={{ minWidth: 200, fontSize: 13, fontWeight: 500, color: '#555' }}>
-                {envLabels[key] || key}
-              </label>
-              {key === 'SMTP_PASS' ? (
-                <div style={{ flex: 1, display: 'flex', gap: 4 }}>
+      {sections.map(section => (
+        <div key={section.title} className="card" style={{ padding: 20, marginBottom: 16 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: '#333' }}>{section.title}</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {section.keys.map((key) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <label style={{ minWidth: 200, fontSize: 13, fontWeight: 500, color: '#555' }}>
+                  {envLabels[key] || key}
+                </label>
+                {key === 'SMTP_PASS' ? (
+                  <div style={{ flex: 1, display: 'flex', gap: 4 }}>
+                    <input
+                      className="form-control"
+                      style={{ flex: 1, fontSize: 13 }}
+                      type={showPass ? 'text' : 'password'}
+                      value={form[key] ?? ''}
+                      onChange={e => setForm({...form, [key]: e.target.value})}
+                      placeholder="Laisser vide pour conserver l'actuel"
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      style={{ whiteSpace: 'nowrap' }}
+                      onClick={() => setShowPass(!showPass)}
+                    >
+                      {showPass ? 'Masquer' : 'Afficher'}
+                    </button>
+                  </div>
+                ) : (
                   <input
                     className="form-control"
                     style={{ flex: 1, fontSize: 13 }}
-                    type={showPass ? 'text' : 'password'}
                     value={form[key] ?? ''}
                     onChange={e => setForm({...form, [key]: e.target.value})}
-                    placeholder="Laisser vide pour conserver l'actuel"
                   />
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    style={{ whiteSpace: 'nowrap' }}
-                    onClick={() => setShowPass(!showPass)}
-                  >
-                    {showPass ? 'Masquer' : 'Afficher'}
-                  </button>
-                </div>
-              ) : (
-                <input
-                  className="form-control"
-                  style={{ flex: 1, fontSize: 13 }}
-                  value={form[key] ?? ''}
-                  onChange={e => setForm({...form, [key]: e.target.value})}
-                />
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-        <button className="btn btn-primary btn-sm" style={{ marginTop: 16 }} onClick={handleSave} disabled={saving}>
-          {saving ? 'Sauvegarde...' : 'Sauvegarder la configuration'}
-        </button>
-      </div>
+      ))}
+
+      <button className="btn btn-primary btn-sm" style={{ marginTop: 4, marginBottom: 16 }} onClick={handleSave} disabled={saving}>
+        {saving ? 'Sauvegarde...' : 'Sauvegarder la configuration'}
+      </button>
 
       <div className="card" style={{ padding: 20 }}>
         <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Base de données</h3>

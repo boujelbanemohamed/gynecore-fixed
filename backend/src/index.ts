@@ -49,6 +49,9 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/patient/login', authLimiter);
 app.use('/api/auth/superadmin/login', authLimiter);
 app.use('/api/auth/secretary/login', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/verify-reset-token', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 
 // ── Body parsing ──────────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));

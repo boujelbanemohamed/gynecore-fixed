@@ -44,6 +44,7 @@ export const doctorAPI = {
   getConsultations: (params?: Record<string, unknown>) => api.get('/doctor/consultations', { params }),
   createConsultation: (data: unknown) => api.post('/doctor/consultations', data),
   updateConsultation: (id: string, data: unknown) => api.put(`/doctor/consultations/${id}`, data),
+  cancelConsultation: (id: string) => api.put(`/doctor/consultations/${id}/cancel`),
   getPrescriptions: (params?: Record<string, unknown>) => api.get('/doctor/prescriptions', { params }),
   getPrescriptionById: (id: string) => api.get(`/doctor/prescriptions/${id}`),
   createPrescription: (data: unknown) => api.post('/doctor/prescriptions', data),
@@ -96,6 +97,12 @@ export const doctorAPI = {
     formData.append('file', file);
     return api.post('/doctor/profile/logo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
+  getGoogleAuthUrl: () => api.get('/doctor/google-calendar/auth-url'),
+  getGoogleCalendarStatus: () => api.get('/doctor/google-calendar/status'),
+  getGoogleCalendarEvents: (params: { start: string; end: string }) =>
+    api.get('/doctor/google-calendar/events', { params }),
+  disconnectGoogleCalendar: () => api.delete('/doctor/google-calendar/disconnect'),
+  getHealth: () => api.get('/doctor/health'),
 };
 
 export const patientAPI = {
@@ -128,6 +135,9 @@ export const superadminAPI = {
   getReminderSettings: () => api.get('/superadmin/reminder-settings'),
   updateReminderSettings: (data: { reminderTimings: number[] }) => api.put('/superadmin/reminder-settings', data),
   getHealth: () => api.get('/superadmin/health'),
+  getHealthAuditLogs: (params?: any) => api.get('/superadmin/health-audit', { params }),
+  updateHealthInterval: (interval: number) => api.put('/superadmin/settings', { settings: { HEALTH_CHECK_INTERVAL: String(interval) } }),
+  toggleHealthComponent: (component: string, enabled: boolean) => api.post('/superadmin/health/toggle', { component, enabled }),
   getDoctorPatients: (doctorId: string) => api.get(`/superadmin/doctors/${doctorId}/patients`),
   getPatientDetail: (patientId: string) => api.get(`/superadmin/patients/${patientId}`),
   resetPatientPassword: (patientId: string) => api.post(`/superadmin/patients/${patientId}/reset-password`),

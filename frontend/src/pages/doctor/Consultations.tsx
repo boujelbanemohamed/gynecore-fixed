@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doctorAPI } from '../../services/api';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
 const typeLabels: Record<string, string> = {
   FIRST_VISIT: 'Premiere visite', FOLLOW_UP: 'Suivi', EMERGENCY: 'Urgence',
@@ -29,6 +30,7 @@ const Consultations: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [confirmCancel, setConfirmCancel] = useState<string|null>(null);
 
   const totalPages = Math.ceil(consultations.length / PER_PAGE);
   const paginatedData = consultations.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
@@ -52,6 +54,14 @@ const Consultations: React.FC = () => {
 
   const resetFilters = () => { setSearch(''); setType(''); setStartDate(''); setEndDate(''); };
   const activeFilterCount = [search, type, startDate, endDate].filter(Boolean).length;
+
+  const handleCancel = async (id: string) => {
+    try {
+      await doctorAPI.cancelConsultation(id);
+      setConsultations(prev => prev.filter(c => c.id !== id));
+    } catch (e) { console.error(e); }
+    setConfirmCancel(null);
+  };
 
   const iS: React.CSSProperties = { padding: '7px 12px', borderRadius: 6, border: '1px solid #dee2e6', fontSize: 13, outline: 'none', backgroundColor: '#fff' };
   const bS = (v: 'p' | 's') => ({ padding: '7px 14px', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: v === 'p' ? '1px solid #27ae60' : '1px solid #dee2e6', backgroundColor: v === 'p' ? '#27ae60' : '#fff', color: v === 'p' ? '#fff' : '#495057' });
@@ -122,7 +132,7 @@ const Consultations: React.FC = () => {
         ) : (
           <>
             <table>
-              <thead><tr><th>Date</th><th>Patiente</th><th>Type</th><th>Motif</th><th>Diagnostic</th><th>Traitement</th></tr></thead>
+              <thead><tr><th>Date</th><th>Patiente</th><th>Type</th><th>Motif</th><th>Diagnostic</th><th>Traitement</th><th>Actions</th></tr></thead>
               <tbody>
                 {paginatedData.map((c: any) => {
                   const u = c.patient?.user;
@@ -134,6 +144,12 @@ const Consultations: React.FC = () => {
                       <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.chiefComplaint || '—'}</td>
                       <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.diagnosis || '—'}</td>
                       <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.treatment || '—'}</td>
+                      <td>
+                        <button onClick={e => { e.stopPropagation(); setConfirmCancel(c.id); }}
+                          style={{ padding: '4px 10px', borderRadius: 4, border: '1px solid #e74c3c', background: '#fff', color: '#e74c3c', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          Annuler
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -202,6 +218,14 @@ const Consultations: React.FC = () => {
           </>
         )}
       </div>
+      {confirmCancel && (
+        <ConfirmDialog
+          isOpen={true}
+          message="Annuler cette consultation ? Le rendez-vous lie sera egalement annule."
+          onConfirm={() => handleCancel(confirmCancel)}
+          onCancel={() => setConfirmCancel(null)}
+        />
+      )}
     </div>
   );
 };

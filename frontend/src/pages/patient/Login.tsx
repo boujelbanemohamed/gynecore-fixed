@@ -18,8 +18,8 @@ const PatientLogin: React.FC = () => {
 
   return (
     <div className="login-page">
-      <div className="login-left" style={{background:'linear-gradient(180deg,#2c5f8a,#1a3f5c)'}}>
-        <h1>Gyne<span style={{color:'#74b9f5'}}>Care</span></h1>
+      <div className="login-left">
+        <h1>Gyne<span>Care</span></h1>
         <p>Accédez à votre espace santé personnel, sécurisé et confidentiel.</p>
         <div className="login-features">
           {[['📁','Mon dossier médical'],['💊','Mes ordonnances'],['📅','Mes rendez-vous'],['🔒','Données sécurisées']].map(([icon,text]) => (
@@ -41,7 +41,7 @@ const PatientLogin: React.FC = () => {
               <label className="form-label">Mot de passe</label>
               <input className="form-control" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Votre mot de passe" required />
             </div>
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{width:'100%',justifyContent:'center',padding:'11px',background:'#2c5f8a'}}>
+            <button type="submit" className="btn btn-primary" disabled={loading} style={{width:'100%',justifyContent:'center',padding:'11px'}}>
               {loading ? 'Connexion...' : 'Accéder à mon espace'}
             </button>
           </form>
@@ -49,7 +49,7 @@ const PatientLogin: React.FC = () => {
             <Link to="/forgot-password" style={{ color: '#e91e63', fontSize: 14, textDecoration: 'none' }}>Mot de passe oublié ?</Link>
           </div>
           <div className="login-divider">ou</div>
-          <div className="login-switch">Vous êtes médecin ? <Link to="/login">Espace médical →</Link></div>
+          <div className="login-switch">Vous êtes médecin ? <Link to="/login">Espace médical →</Link> | Vous êtes secrétaire ? <Link to="/secretary/login">Portail secrétaire →</Link> | <Link to="/superadmin/login">Administration →</Link></div>
         </div>
       </div>
     </div>

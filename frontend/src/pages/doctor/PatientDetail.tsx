@@ -26,6 +26,11 @@ const certTypeIcons: Record<string,string> = {
   APTITUDE:'✅', MEDICAL_REST:'🏥', PREGNANCY_WORK:'🤰', MATERNITY_LEAVE:'👶', RETURN_TO_WORK:'💼', POST_OPERATIVE:'⚕️'
 };
 
+const escapeHtml = (str: any) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
+
 const emptyLab = () => ({
   hemoglobin:'', vgm:'', whiteBloodCells:'', platelets:'', ferritin:'', crp:'',
   fsh:'', lh:'', estradiol:'', amh:'', progesterone:'', prolactine:'', tsh:'', testosterone:'', dheas:'',
@@ -322,9 +327,9 @@ const PatientDetail: React.FC = () => {
       const res = await doctorAPI.getPrescriptionById(prescId);
       const presc = res.data.data;
       const medsRows = (presc.medications || []).map((m: any) =>
-        '<tr><td style="font-weight:500">' + (m.name||'') + '</td><td>' + (m.dosage||'') + '</td><td>' + (m.frequency||'') + '</td><td>' + (m.duration||'') + '</td><td>' + (m.instructions||'') + '</td></tr>'
+        '<tr><td style="font-weight:500">' + escapeHtml(m.name||'') + '</td><td>' + escapeHtml(m.dosage||'') + '</td><td>' + escapeHtml(m.frequency||'') + '</td><td>' + escapeHtml(m.duration||'') + '</td><td>' + escapeHtml(m.instructions||'') + '</td></tr>'
       ).join('');
-      const pName = (presc.patient?.user?.firstName||'') + ' ' + (presc.patient?.user?.lastName||'');
+      const pName = escapeHtml((presc.patient?.user?.firstName||'') + ' ' + (presc.patient?.user?.lastName||''));
       const pAge = presc.patient?.dateOfBirth ? Math.floor((Date.now() - new Date(presc.patient.dateOfBirth).getTime()) / (365.25*24*60*60*1000)) + ' ans' : '--';
       const logoUrl = doctorProfile?.logo ? fileUrl(doctorProfile.logo) : '';
       let logoHtml = '';
@@ -340,21 +345,21 @@ const PatientDetail: React.FC = () => {
           });
         } catch { logoHtml = ''; }
       }
-      const clinicHtml = doctorProfile?.clinicName ? '<div class="rx-clinic"><h3>' + doctorProfile.clinicName + '</h3><div class="rx-clinic-addr">' + (doctorProfile.address||'') + (doctorProfile.city?', ':'') + (doctorProfile.city||'') + (doctorProfile.postalCode?' ':'') + (doctorProfile.postalCode||'') + '</div></div>' : '';
-      const notesHtml = presc.notes ? '<div class="rx-notes"><strong>Notes :</strong> ' + presc.notes + '</div>' : '';
-      const licHtml = doctorProfile?.licenseNumber ? '<div class="rx-contact">N Licence : ' + doctorProfile.licenseNumber + (doctorProfile?.rppsNumber ? ' . RPPS : ' + doctorProfile.rppsNumber : '') + '</div>' : '';
+      const clinicHtml = doctorProfile?.clinicName ? '<div class="rx-clinic"><h3>' + escapeHtml(doctorProfile.clinicName) + '</h3><div class="rx-clinic-addr">' + escapeHtml(doctorProfile.address||'') + (doctorProfile.city?', ':'') + escapeHtml(doctorProfile.city||'') + (doctorProfile.postalCode?' ':'') + escapeHtml(doctorProfile.postalCode||'') + '</div></div>' : '';
+      const notesHtml = presc.notes ? '<div class="rx-notes"><strong>Notes :</strong> ' + escapeHtml(presc.notes) + '</div>' : '';
+      const licHtml = doctorProfile?.licenseNumber ? '<div class="rx-contact">N Licence : ' + escapeHtml(doctorProfile.licenseNumber) + (doctorProfile?.rppsNumber ? ' . RPPS : ' + escapeHtml(doctorProfile.rppsNumber) : '') + '</div>' : '';
       const html = '<div>' +
         '<div class="rx-header">' + logoHtml +
         '<div class="rx-info">' +
-        '<div class="rx-clinic-name">' + (doctorProfile?.clinicName||'') + '</div>' +
-        '<h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
-        '<div class="rx-specialty">' + (doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
-        '<div class="rx-services">' + (doctorProfile?.services||'') + '</div>' +
-        '<div class="rx-contact">' + (doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + (doctorProfile?.email||'') + '</div>' +
+        '<div class="rx-clinic-name">' + escapeHtml(doctorProfile?.clinicName||'') + '</div>' +
+        '<h2>Dr ' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</h2>' +
+        '<div class="rx-specialty">' + escapeHtml(doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
+        '<div class="rx-services">' + escapeHtml(doctorProfile?.services||'') + '</div>' +
+        '<div class="rx-contact">' + escapeHtml(doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + escapeHtml(doctorProfile?.email||'') + '</div>' +
         '</div></div>' +
         '<div class="rx-title">Ordonnance Medicale</div>' +
         '<div class="rx-patient"><div><strong>Patiente :</strong> ' + pName + '</div><div><strong>Age :</strong> ' + pAge + '</div></div>' +
-        '<div class="rx-date-place">Fait a ' + (doctorProfile?.city||'') + ', le ' + new Date(presc.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</div>' +
+        '<div class="rx-date-place">Fait a ' + escapeHtml(doctorProfile?.city||'') + ', le ' + new Date(presc.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</div>' +
         '<table class="rx-meds-table"><thead><tr><th>Medicament</th><th>Dosage</th><th>Frequence</th><th>Duree</th><th>Instructions</th></tr></thead><tbody>' + medsRows + '</tbody></table>' +
         notesHtml +
         '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
@@ -402,9 +407,9 @@ const PatientDetail: React.FC = () => {
       const res = await doctorAPI.getMedicalLetterById(letterId);
       const letter = res.data.data;
       const c = letter.content || {};
-      const pName = (patient.user?.firstName||'') + ' ' + (patient.user?.lastName||'');
+      const pName = escapeHtml((patient.user?.firstName||'') + ' ' + (patient.user?.lastName||''));
       const pAge = patient.dateOfBirth ? Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25*24*60*60*1000)) + ' ans' : '--';
-      const fullAddr = [(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', ');
+      const fullAddr = escapeHtml([(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', '));
       let logoHtml = '';
       if (doctorProfile?.logo) {
         try {
@@ -430,27 +435,27 @@ const PatientDetail: React.FC = () => {
       const fld = (v: string) => v || '.......................................';
       let bodyHtml = '';
       if (letter.recipient) {
-        bodyHtml += '<div class="cert-details"><p><strong>A l\'attention de :</strong> ' + letter.recipient + '</p></div>';
+        bodyHtml += '<div class="cert-details"><p><strong>A l\'attention de :</strong> ' + escapeHtml(letter.recipient) + '</p></div>';
       }
       if (letter.subject) {
-        bodyHtml += '<div class="cert-details"><p><strong>Objet :</strong> ' + letter.subject + '</p></div>';
+        bodyHtml += '<div class="cert-details"><p><strong>Objet :</strong> ' + escapeHtml(letter.subject) + '</p></div>';
       }
       if (c.body) {
-        bodyHtml += '<div class="cert-observations" style="white-space:pre-wrap;line-height:1.8">' + c.body + '</div>';
+        bodyHtml += '<div class="cert-observations" style="white-space:pre-wrap;line-height:1.8">' + escapeHtml(c.body) + '</div>';
       }
       const html = '<div>' +
         '<div class="rx-header">' + logoHtml +
         '<div class="rx-info">' +
-        '<div class="rx-clinic-name">' + (doctorProfile?.clinicName||'') + '</div>' +
-        '<h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
-        '<div class="rx-specialty">' + (doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
-        '<div class="rx-services">' + (doctorProfile?.services||'') + '</div>' +
+        '<div class="rx-clinic-name">' + escapeHtml(doctorProfile?.clinicName||'') + '</div>' +
+        '<h2>Dr ' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</h2>' +
+        '<div class="rx-specialty">' + escapeHtml(doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
+        '<div class="rx-services">' + escapeHtml(doctorProfile?.services||'') + '</div>' +
         '<div class="rx-address">' + fullAddr + '</div>' +
-        '<div class="rx-contact">' + (doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + (doctorProfile?.email||'') + '</div>' +
+        '<div class="rx-contact">' + escapeHtml(doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + escapeHtml(doctorProfile?.email||'') + '</div>' +
         '</div></div>' +
         '<div class="rx-title">' + title + '</div>' +
         '<div class="rx-patient"><div><strong>Patiente :</strong> ' + pName + '</div><div><strong>Age :</strong> ' + pAge + '</div></div>' +
-        '<div class="rx-date-place">Fait a ' + (doctorProfile?.city||'Tunis') + ', le ' + fmt(letter.createdAt) + '</div>' +
+        '<div class="rx-date-place">Fait a ' + escapeHtml(doctorProfile?.city||'Tunis') + ', le ' + fmt(letter.createdAt) + '</div>' +
         '<div class="cert-body">' + bodyHtml + '</div>' +
         '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
         '</div>';
@@ -654,9 +659,9 @@ const getCertFields = (t: string) => {
       const res = await (doctorAPI as any).getCertificateById(certId);
       const cert = res.data.data;
       const c = typeof cert.content === 'string' ? JSON.parse(cert.content || '{}') : (cert.content || {});
-      const pName = (cert.patient?.user?.firstName||'') + ' ' + (cert.patient?.user?.lastName||'');
+      const pName = escapeHtml((cert.patient?.user?.firstName||'') + ' ' + (cert.patient?.user?.lastName||''));
       const pAge = cert.patient?.dateOfBirth ? Math.floor((Date.now() - new Date(cert.patient.dateOfBirth).getTime()) / (365.25*24*60*60*1000)) + ' ans' : '--';
-      const fullAddr = [(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', ');
+      const fullAddr = escapeHtml([(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', '));
       let logoHtml = '';
       if (doctorProfile?.logo) {
         try {
@@ -671,34 +676,34 @@ const getCertFields = (t: string) => {
         } catch { logoHtml = ''; }
       }
       const fmt = (d: string) => d ? new Date(d).toLocaleDateString('fr-FR') : '.......................................';
-      const fld = (v: string) => v || '.......................................';
+      const fld = (v: string) => escapeHtml(v) || '.......................................';
       let bodyHtml = '';
       switch (cert.type) {
         case 'APTITUDE':
-          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</strong>, ' + escapeHtml(doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
             '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p>' +
-            (c.cin ? '<p><strong>CIN :</strong> ' + c.cin + '</p>' : '') +
+            (c.cin ? '<p><strong>CIN :</strong> ' + escapeHtml(c.cin) + '</p>' : '') +
             '<p><strong>Date du certificat :</strong> ' + fmt(c.certDate) + '</p></div>' +
             '<p>Apres examen medical, je certifie que la patiente est :</p>' +
             '<div class="cert-details"><p><strong>' + fld(c.aptitudeType) + '</strong></p></div>' +
-            (c.validityDuration ? '<p>Ce certificat est valable pour une duree de <strong>' + c.validityDuration + '</strong>.</p>' : '') +
-            (c.observations ? '<div class="cert-observations"><strong>Observations :</strong> ' + c.observations + '</div>' : '');
+            (c.validityDuration ? '<p>Ce certificat est valable pour une duree de <strong>' + escapeHtml(c.validityDuration) + '</strong>.</p>' : '') +
+            (c.observations ? '<div class="cert-observations"><strong>Observations :</strong> ' + escapeHtml(c.observations) + '</div>' : '');
           break;
         case 'MEDICAL_REST':
-          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</strong>, ' + escapeHtml(doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
             '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p></div>' +
             '<p>La patiente necessite un repos medical pour la duree et les conditions suivantes :</p>' +
             '<div class="cert-details">' +
             '<p><strong>Du :</strong> ' + fmt(c.startDate) + ' <strong>Au :</strong> ' + fmt(c.endDate) + ' (' + fld(c.durationDays) + ' jours)</p>' +
             '<p><strong>Motif medical :</strong> ' + fld(c.medicalReason) + '</p>' +
-            (c.sorties ? '<p><strong>Sorties :</strong> ' + c.sorties + '</p>' : '') +
+            (c.sorties ? '<p><strong>Sorties :</strong> ' + escapeHtml(c.sorties) + '</p>' : '') +
             '</div>' +
-            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + c.recommendations + '</div>' : '');
+            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + escapeHtml(c.recommendations) + '</div>' : '');
           break;
         case 'PREGNANCY_WORK':
-          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie la grossesse de :</p>' +
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</strong>, ' + escapeHtml(doctorProfile?.specialization||'medecin specialiste') + ', certifie la grossesse de :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
             '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p>' +
             '<p><strong>Terme actuel (Semaines d\'Amenorrhee) :</strong> ' + fld(c.currentTerm) + ' SA</p>' +
@@ -706,7 +711,7 @@ const getCertFields = (t: string) => {
             '<p>En consequence, je recommande la mesure suivante :</p>' +
             '<div class="cert-details"><p><strong>Mesure :</strong> ' + fld(c.measure) + '</p>' +
             '<p><strong>Duree :</strong> ' + (c.durationDate ? 'jusqu\'au ' + fmt(c.durationDate) : '') + (c.durationDate && c.duration ? ' - ' : '') + fld(c.duration) + '</p></div>' +
-            (c.medicalContext ? '<div class="cert-observations"><strong>Contexte medical :</strong> ' + c.medicalContext + '</div>' : '');
+            (c.medicalContext ? '<div class="cert-observations"><strong>Contexte medical :</strong> ' + escapeHtml(c.medicalContext) + '</div>' : '');
           break;
         case 'MATERNITY_LEAVE':
           const matDates = (c.leaveType === 'Conge postnatal')
@@ -714,17 +719,17 @@ const getCertFields = (t: string) => {
             : (c.leaveType === 'Conge de maternite complet')
             ? '<p><strong>DPA :</strong> ' + fmt(c.dpa) + '</p><p><strong>Fin du conge :</strong> ' + fmt(c.endDate) + '</p>'
             : '<p><strong>DPA (Date Prevue d\'Accouchement) :</strong> ' + fmt(c.dpa) + '</p><p><strong>Debut :</strong> ' + fmt(c.startDate) + '</p>';
-          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</strong>, ' + escapeHtml(doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme ' + pName + ', agee de ' + pAge + '</p>' +
             '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p></div>' +
             '<p>La patiente beneficie d\'un conge de maternite dans les conditions suivantes :</p>' +
             '<div class="cert-details"><p><strong>Type :</strong> ' + fld(c.leaveType) + '</p>' +
             matDates +
             '<p><strong>Duree totale :</strong> ' + fld(c.totalDuration) + '</p></div>' +
-            (c.observations ? '<div class="cert-observations"><strong>Observations :</strong> ' + c.observations + '</div>' : '');
+            (c.observations ? '<div class="cert-observations"><strong>Observations :</strong> ' + escapeHtml(c.observations) + '</div>' : '');
           break;
         case 'RETURN_TO_WORK':
-          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', autorise la reprise du travail de :</p>' +
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</strong>, ' + escapeHtml(doctorProfile?.specialization||'medecin specialiste') + ', autorise la reprise du travail de :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
             '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p></div>' +
             '<p>Arret de travail pour le motif suivant :</p>' +
@@ -733,10 +738,10 @@ const getCertFields = (t: string) => {
             '<p><strong>Date de reprise :</strong> ' + fmt(c.returnDate) + '</p>' +
             '<p><strong>Type de reprise :</strong> ' + fld(c.returnType) + '</p></div>' +
             '<p>Aucune contre-indication medicale a la reprise du travail.</p>' +
-            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + c.recommendations + '</div>' : '');
+            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + escapeHtml(c.recommendations) + '</div>' : '');
           break;
         case 'POST_OPERATIVE':
-          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</strong>, ' + (doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
+          bodyHtml = '<p>Je soussigne(e), Dr <strong>' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</strong>, ' + escapeHtml(doctorProfile?.specialization||'medecin specialiste') + ', certifie que :</p>' +
             '<div class="cert-details"><p><strong>Patiente :</strong> Mme/Mlle ' + pName + ', agee de ' + pAge + '</p>' +
             '<p><strong>Date de naissance :</strong> ' + fmt(c.dateOfBirth) + '</p></div>' +
             '<p>La patiente a beneficie d\'une intervention chirurgicale dans les conditions suivantes :</p>' +
@@ -745,9 +750,9 @@ const getCertFields = (t: string) => {
             '<p><strong>Date d\'intervention :</strong> ' + fmt(c.interventionDate) + '</p>' +
             '<p><strong>Repos prescrit :</strong> ' + fld(c.restDuration) + '</p>' +
             '<p><strong>Reprise d\'activite le :</strong> ' + fmt(c.resumptionDate) + '</p>' +
-            (c.restrictions ? '<p><strong>Restrictions :</strong> ' + c.restrictions + '</p>' : '') +
+            (c.restrictions ? '<p><strong>Restrictions :</strong> ' + escapeHtml(c.restrictions) + '</p>' : '') +
             '</div>' +
-            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + c.recommendations + '</div>' : '');
+            (c.recommendations ? '<div class="cert-observations"><strong>Recommandations :</strong> ' + escapeHtml(c.recommendations) + '</div>' : '');
           break;
         default:
           bodyHtml = '<p>Contenu du certificat</p>';
@@ -762,16 +767,16 @@ const getCertFields = (t: string) => {
       const html = '<div>' +
         '<div class="rx-header">' + logoHtml +
         '<div class="rx-info">' +
-        '<div class="rx-clinic-name">' + (doctorProfile?.clinicName||'') + '</div>' +
-        '<h2>Dr ' + (doctorProfile?.lastName||'') + ' ' + (doctorProfile?.firstName||'') + '</h2>' +
-        '<div class="rx-specialty">' + (doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
-        '<div class="rx-services">' + (doctorProfile?.services||'') + '</div>' +
+        '<div class="rx-clinic-name">' + escapeHtml(doctorProfile?.clinicName||'') + '</div>' +
+        '<h2>Dr ' + escapeHtml(doctorProfile?.lastName||'') + ' ' + escapeHtml(doctorProfile?.firstName||'') + '</h2>' +
+        '<div class="rx-specialty">' + escapeHtml(doctorProfile?.specialization||'Gynecologie-Obstetrique') + '</div>' +
+        '<div class="rx-services">' + escapeHtml(doctorProfile?.services||'') + '</div>' +
         '<div class="rx-address">' + fullAddr + '</div>' +
-        '<div class="rx-contact">' + (doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + (doctorProfile?.email||'') + '</div>' +
+        '<div class="rx-contact">' + escapeHtml(doctorProfile?.phone||'') + (doctorProfile?.email?' . ':'') + escapeHtml(doctorProfile?.email||'') + '</div>' +
         '</div></div>' +
         '<div class="rx-title">' + title + '</div>' +
         '<div class="rx-patient"><div><strong>Patiente :</strong> ' + pName + '</div><div><strong>Age :</strong> ' + pAge + '</div></div>' +
-        '<div class="rx-date-place">Fait a ' + (doctorProfile?.city||'Tunis') + ', le ' + new Date(cert.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</div>' +
+        '<div class="rx-date-place">Fait a ' + escapeHtml(doctorProfile?.city||'Tunis') + ', le ' + new Date(cert.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) + '</div>' +
         '<div class="cert-body">' + bodyHtml + '</div>' +
         '<div class="rx-footer"><div class="rx-signature"><div class="rx-sig-line">Signature et cachet du medecin</div></div></div>' +
         '</div>';

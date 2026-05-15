@@ -29,6 +29,7 @@ const createAppointmentSchema = z.object({
   type: z.nativeEnum(ConsultationType).optional(),
   reason: z.string().optional(),
   notes: z.string().optional(),
+  googleEventId: z.string().optional(),
 }).refine(d => new Date(d.endTime) > new Date(d.startTime), {
   message: 'La date de fin doit être après la date de début',
 });
@@ -41,9 +42,9 @@ const updateStatusSchema = z.object({
 const ALLOWED_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   [AppointmentStatus.SCHEDULED]:  [AppointmentStatus.CONFIRMED, AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
   [AppointmentStatus.CONFIRMED]:  [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
-  [AppointmentStatus.CANCELLED]:  [],
-  [AppointmentStatus.COMPLETED]:  [],
-  [AppointmentStatus.NO_SHOW]:    [],
+  [AppointmentStatus.CANCELLED]:  [AppointmentStatus.SCHEDULED],
+  [AppointmentStatus.COMPLETED]:  [AppointmentStatus.CONFIRMED],
+  [AppointmentStatus.NO_SHOW]:    [AppointmentStatus.SCHEDULED, AppointmentStatus.CANCELLED],
   [AppointmentStatus.PENDING]:      [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED, AppointmentStatus.CANCELLED],
   [AppointmentStatus.ARRIVED]:     [AppointmentStatus.IN_PROGRESS, AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
   [AppointmentStatus.IN_PROGRESS]: [AppointmentStatus.COMPLETED, AppointmentStatus.POSTPONED, AppointmentStatus.CANCELLED],
@@ -110,6 +111,7 @@ export const createAppointment = async (req: Request, res: Response) => {
         type: data.type,
         reason: data.reason,
         notes: data.notes,
+        googleEventId: data.googleEventId || null,
         startTime: new Date(data.startTime),
         endTime: new Date(data.endTime),
       },
@@ -174,7 +176,24 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
 
     const appointment = await prisma.appointment.update({ where: { id }, data: { status } });
 
-    // Envoi notification changement de statut au médecin
+    // Auto-creer une consultation si le RDV est confirme
+    if (status === AppointmentStatus.CONFIRMED) {
+      const existing = await prisma.consultation.findUnique({ where: { appointmentId: id } });
+      if (!existing) {
+        await prisma.consultation.create({
+          data: {
+            patientId: current.patientId,
+            appointmentId: id,
+            date: current.startTime,
+            type: current.type,
+            chiefComplaint: current.reason || '',
+            notes: current.notes || '',
+          },
+        }).catch((e) => console.error('[createConsultationFromAppointment]', e));
+      }
+    }
+
+    // Envoi notification changement de statut au medicin
     sendDoctorEmail(doctorId, 'appointment_status_changed', {
       patientFirstName: current.patient.user.firstName,
       patientLastName: current.patient.user.lastName,
