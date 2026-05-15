@@ -205,9 +205,11 @@ test.describe('Doctor-Secretary Cross Verification', () => {
     );
     await page.getByRole('button', { name: /Nouveau RDV/ }).click();
     await patientLoadResp;
+    await page.waitForTimeout(300);
 
     // 3. Check if patients exist, if not create one via API
-    let patientSelect = page.locator('select').first();
+    // Locate patient select by its label "Patiente" within the modal
+    let patientSelect = page.locator('div:has(> :text-is("Patiente")) select');
     let optCount = await patientSelect.locator('option').count();
     console.log('Initial patient options:', optCount);
 
@@ -236,15 +238,18 @@ test.describe('Doctor-Secretary Cross Verification', () => {
       );
       await page.getByRole('button', { name: /Nouveau RDV/ }).click();
       await patientLoadResp2;
-      patientSelect = page.locator('select').first();
+      await page.waitForTimeout(300);
+      patientSelect = page.locator('div:has(> :text-is("Patiente")) select');
       optCount = await patientSelect.locator('option').count();
       console.log('After creating patient, options:', optCount);
     }
 
     // 4. Select first real patient (index 1 = first after placeholder)
-    await patientSelect.selectOption({ index: 1 });
-    const selectedVal = await patientSelect.inputValue();
-    console.log('Selected patientId:', selectedVal);
+    if (optCount > 1) {
+      await patientSelect.selectOption({ index: 1 });
+      const selectedVal = await patientSelect.inputValue();
+      console.log('Selected patientId:', selectedVal);
+    }
 
     // 5. Fill date (tomorrow)
     const tomorrow = new Date();

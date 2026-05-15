@@ -7,7 +7,8 @@ import Spinner from '../../components/shared/Spinner';
 import Alert from '../../components/shared/Alert';
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000/api";
+const fileUrl = (path: string) => API_BASE.replace(/\/api$/, '') + path;
 type Tab = 'info'|'consultations'|'exams'|'prescriptions'|'certificates'|'letters'|'appointments'|'documents';
 type ConsultTab = 'accueil'|'examen'|'bilan'|'contexte';
 type ClinicalCtx = 'obstetrique'|'infertilite'|null;
@@ -141,13 +142,13 @@ const PatientDetail: React.FC = () => {
 
   const loadDocuments = () => {
     if (!id) return;
-    doctorAPI.getPatientDocuments(id).then(r => setDocuments(r.data.data || [])).catch(() => {});
+    doctorAPI.getPatientDocuments(id).then(r => setDocuments(r.data.data || [])).catch(() => setAlertMsg({type:'error', text:'Erreur chargement documents'}));
   };
 
   useEffect(() => {
     (doctorAPI as any).getClinicalExams({ patientId: id }).then((r: any) => {
       if (r?.data?.data) setExamCount(r.data.data.length);
-    }).catch(() => {});
+    }).catch(() => setAlertMsg({type:'error', text:'Erreur chargement examens'}));
   }, [id]);
 
   const uploadFile = async (file: File) => {
@@ -189,7 +190,7 @@ const PatientDetail: React.FC = () => {
   };
 
   const loadDoctorProfile = () => {
-    doctorAPI.getProfile().then(r => setDoctorProfile(r.data.data)).catch(() => {});
+    doctorAPI.getProfile().then(r => setDoctorProfile(r.data.data)).catch(() => setAlertMsg({type:'error', text:'Erreur chargement profil'}));
   };
   useEffect(() => { loadDoctorProfile(); }, []);
 
@@ -325,7 +326,7 @@ const PatientDetail: React.FC = () => {
       ).join('');
       const pName = (presc.patient?.user?.firstName||'') + ' ' + (presc.patient?.user?.lastName||'');
       const pAge = presc.patient?.dateOfBirth ? Math.floor((Date.now() - new Date(presc.patient.dateOfBirth).getTime()) / (365.25*24*60*60*1000)) + ' ans' : '--';
-      const logoUrl = doctorProfile?.logo ? (API_BASE.replace('/api','') + doctorProfile.logo) : '';
+      const logoUrl = doctorProfile?.logo ? fileUrl(doctorProfile.logo) : '';
       let logoHtml = '';
       const fullAddr = [(doctorProfile?.address||''), (doctorProfile?.city||''), (doctorProfile?.postalCode||'')].filter(Boolean).join(', ');
       if (logoUrl) {
@@ -407,7 +408,7 @@ const PatientDetail: React.FC = () => {
       let logoHtml = '';
       if (doctorProfile?.logo) {
         try {
-          const imgUrl = API_BASE.replace('/api','') + doctorProfile.logo;
+          const imgUrl = fileUrl(doctorProfile.logo);
           const imgRes = await fetch(imgUrl);
           const blob = await imgRes.blob();
           logoHtml = await new Promise<string>((resolve) => {
@@ -640,10 +641,10 @@ const getCertFields = (t: string) => {
     if (!id) return;
     (doctorAPI as any).getCertificates({ patientId: id }).then((r: any) => {
       setCertificates(r.data.data?.certificates || r.data.data || []);
-    }).catch(() => {});
+    }).catch(() => setAlertMsg({type:'error', text:'Erreur chargement certificats'}));
   };
   const loadLetters = () => {
-    doctorAPI.getMedicalLetters({ patientId: id }).then((r: any) => setLetters(Array.isArray(r.data.data) ? r.data.data : r.data.data?.letters || [])).catch(() => {});
+    doctorAPI.getMedicalLetters({ patientId: id }).then((r: any) => setLetters(Array.isArray(r.data.data) ? r.data.data : r.data.data?.letters || [])).catch(() => setAlertMsg({type:'error', text:'Erreur chargement courriers'}));
   };
   useEffect(() => { loadLetters(); }, [id]);
   useEffect(() => { loadCertificates(); }, [id]);
@@ -659,7 +660,7 @@ const getCertFields = (t: string) => {
       let logoHtml = '';
       if (doctorProfile?.logo) {
         try {
-          const imgUrl = API_BASE.replace('/api','') + doctorProfile.logo;
+          const imgUrl = fileUrl(doctorProfile.logo);
           const imgRes = await fetch(imgUrl);
           const blob = await imgRes.blob();
           logoHtml = await new Promise<string>((resolve) => {
@@ -787,6 +788,23 @@ const getCertFields = (t: string) => {
     if (!id) return;
     setSaving(true);
     try {
+      const f = form as any;
+      const examDetails: Record<string, any> = {};
+      for (const key of ['conjonctives','cardiacAuscultation','pulmonaryAuscultation',
+        'abdomen','uterusState','uterineHeight','presentation','bcf','adnexa',
+        'cervixAspect','vaginalDischarge','dilatation','effacement','consistency',
+        'presentationHeight','breastExam','oedemes','clinicalConclusion','echographie',
+        'medicalHistory','surgicalHistory','familyHistory']) {
+        if (f[key]) examDetails[key] = f[key];
+      }
+      const labKeys = ['hemoglobin','vgm','whiteBloodCells','platelets','ferritin','crp',
+        'fsh','lh','estradiol','amh','progesterone','prolactine','tsh','testosterone','dheas',
+        'glycemie','hba1c','hdl','creatinine','uricAcid','asat','alat','tp','tca',
+        'fibrinogen','dDimers','bloodGroup','rai','bhcg','ca125','rubella','toxoplasmosis','hiv',
+        'proteinuria','ecbu'];
+      for (const key of labKeys) {
+        if (f[key]) examDetails[key] = f[key];
+      }
       await doctorAPI.createConsultation({
         patientId: id,
         date: form.date,
@@ -798,8 +816,13 @@ const getCertFields = (t: string) => {
         treatment: form.treatment,
         notes: form.notes,
         weight: form.weight ? parseFloat(form.weight) : undefined,
+        height: form.height ? parseFloat(form.height) : undefined,
         bloodPressure: form.bloodPressure,
         temperature: form.temperature ? parseFloat(form.temperature) : undefined,
+        heartRate: form.heartRate ? parseInt(form.heartRate) : undefined,
+        generalState: form.generalState || undefined,
+        ddr: form.ddr || undefined,
+        examDetails: Object.keys(examDetails).length > 0 ? examDetails : undefined,
         nextVisit: form.nextVisit || undefined,
       });
       load();
@@ -986,8 +1009,15 @@ const getCertFields = (t: string) => {
               </div>
               {c.chiefComplaint && <div className="detail-row"><span className="detail-label">Motif de consultation</span><span>{c.chiefComplaint}</span></div>}
               {c.symptoms && <div className="detail-row"><span className="detail-label">Symptômes</span><span>{c.symptoms}</span></div>}
-              {c.weight && <div className="detail-row"><span className="detail-label">Poids</span><span>{c.weight} kg</span></div>}
-              {c.bloodPressure && <div className="detail-row"><span className="detail-label">Tension artérielle</span><span>{c.bloodPressure}</span></div>}
+              <div className="detail-row"><span className="detail-label">Constantes</span><span>{
+                [c.weight ? c.weight + ' kg' : '', c.height ? c.height + ' cm' : '', c.bloodPressure, c.temperature ? c.temperature + '°C' : '', c.heartRate ? c.heartRate + ' bpm' : ''].filter(Boolean).join(' · ') || '—'
+              }</span></div>
+              {c.generalState && <div className="detail-row"><span className="detail-label">État général</span><span>{c.generalState}</span></div>}
+              {c.ddr && <div className="detail-row"><span className="detail-label">DDR</span><span>{new Date(c.ddr).toLocaleDateString('fr-FR')}</span></div>}
+              {c.examDetails?.abdomen && <div className="detail-row"><span className="detail-label">Abdomen</span><span>{c.examDetails.abdomen}</span></div>}
+              {c.examDetails?.uterusState && <div className="detail-row"><span className="detail-label">État utérin</span><span>{c.examDetails.uterusState}</span></div>}
+              {c.examDetails?.uterineHeight && <div className="detail-row"><span className="detail-label">Hauteur utérine</span><span>{c.examDetails.uterineHeight}</span></div>}
+              {c.examDetails?.bcf && <div className="detail-row"><span className="detail-label">BCF</span><span>{c.examDetails.bcf}</span></div>}
               {c.diagnosis && <div className="detail-row"><span className="detail-label">Diagnostic</span><span style={{ fontWeight: 500 }}>{c.diagnosis}</span></div>}
               {c.treatment && <div className="detail-row"><span className="detail-label">Traitement</span><span>{c.treatment}</span></div>}
               {c.notes && <div className="detail-row"><span className="detail-label">Notes</span><span>{c.notes}</span></div>}
@@ -1204,7 +1234,7 @@ const getCertFields = (t: string) => {
                     <div style={{ fontWeight: 500, fontSize: 14 }}>{doc.name}</div>
                     <div className="text-muted text-sm">{doc.type} · {doc.size ? formatFileSize(doc.size) : '—'}</div>
                   </div>
-                  <a href={`${API_BASE.replace('/api','')}${doc.url}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">Voir</a>
+                  <a href={fileUrl(doc.url)} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">Voir</a>
                   <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: '#f5c6c3' }} onClick={() => deleteDoc(doc.id)}>Supprimer</button>
                 </div>
               ))}

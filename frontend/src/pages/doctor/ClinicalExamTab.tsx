@@ -67,6 +67,8 @@ const OptionSelector: React.FC<{
   );
 };
 
+const fileUrl = (base: string, path: string) => base.replace(/\/api$/, '') + path;
+
 const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctorProfile?: any; API_BASE?: string }> = ({ patientId, patientName, doctorProfile, API_BASE }) => {
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,7 +158,7 @@ const ClinicalExamTab: React.FC<{ patientId: string; patientName: string; doctor
   const handlePrint = async (ex: any) => {
     try {
       const dp = doctorProfile || {};
-      const logoUrl = dp.logo && API_BASE ? (API_BASE.replace('/api','') + dp.logo) : '';
+      const logoUrl = dp.logo && API_BASE ? fileUrl(API_BASE, dp.logo) : '';
       let logoHtml = '';
       if (logoUrl) {
         try {
