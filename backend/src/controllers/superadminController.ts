@@ -254,6 +254,10 @@ export const getSystemHealth = async (_req: Request, res: Response) => {
     const configCheck = checks.find(c => c.component === 'config')!;
     const smtpCheck = checks.find(c => c.component === 'smtp')!;
     const gcCheck = checks.find(c => c.component === 'googleCalendar')!;
+    const authCheck = checks.find(c => c.component === 'auth');
+    const storageCheck = checks.find(c => c.component === 'storage');
+    const remindersCheck = checks.find(c => c.component === 'reminders');
+    const securityCheck = checks.find(c => c.component === 'security');
 
     const config = readSystemConfig();
     const smtpHost = (config.SMTP_HOST || process.env.SMTP_HOST || '').replace(/^(.{3}).*(@.*)$/, '$1***$2');
@@ -335,6 +339,43 @@ export const getSystemHealth = async (_req: Request, res: Response) => {
             message: gcCheck.message,
             recoveryAction: gcCheck.recoveryAction,
             recoverySuccess: gcCheck.recoverySuccess,
+            disabled: gcCheck.disabled,
+          },
+          auth: {
+            status: authCheck?.status || 'error',
+            message: authCheck?.message || 'Non disponible',
+            checkCommand: authCheck?.checkCommand,
+            durationMs: authCheck?.durationMs || 0,
+            recoveryAction: authCheck?.recoveryAction,
+            recoverySuccess: authCheck?.recoverySuccess,
+            disabled: authCheck?.disabled,
+          },
+          storage: {
+            status: storageCheck?.status || 'error',
+            message: storageCheck?.message || 'Non disponible',
+            checkCommand: storageCheck?.checkCommand,
+            durationMs: storageCheck?.durationMs || 0,
+            recoveryAction: storageCheck?.recoveryAction,
+            recoverySuccess: storageCheck?.recoverySuccess,
+            disabled: storageCheck?.disabled,
+          },
+          reminders: {
+            status: remindersCheck?.status || 'error',
+            message: remindersCheck?.message || 'Non disponible',
+            checkCommand: remindersCheck?.checkCommand,
+            durationMs: remindersCheck?.durationMs || 0,
+            recoveryAction: remindersCheck?.recoveryAction,
+            recoverySuccess: remindersCheck?.recoverySuccess,
+            disabled: remindersCheck?.disabled,
+          },
+          security: {
+            status: securityCheck?.status || 'error',
+            message: securityCheck?.message || 'Non disponible',
+            checkCommand: securityCheck?.checkCommand,
+            durationMs: securityCheck?.durationMs || 0,
+            recoveryAction: securityCheck?.recoveryAction,
+            recoverySuccess: securityCheck?.recoverySuccess,
+            disabled: securityCheck?.disabled,
           },
         },
         timestamp: new Date().toISOString(),
