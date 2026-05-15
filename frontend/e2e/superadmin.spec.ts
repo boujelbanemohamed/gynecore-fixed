@@ -201,6 +201,10 @@ test.describe('Superadmin Portal', () => {
       await expect(page.getByRole('heading', { name: '🗄️ Base de donnees' })).toBeVisible();
       await expect(page.getByRole('heading', { name: '⚙️ Configuration' })).toBeVisible();
       await expect(page.getByRole('heading', { name: '📧 SMTP' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: '🔐 Authentification' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: '💾 Stockage' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: '🔔 Rappels' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: '🛡️ Securite' })).toBeVisible();
     });
 
     test('SA19 - Health page shows status indicators', async ({ page }) => {

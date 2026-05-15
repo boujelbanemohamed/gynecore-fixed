@@ -1,6 +1,8 @@
 import { prisma } from "../prisma";
 import fs from "fs";
 import path from "path";
+import jwt from 'jsonwebtoken';
+import os from 'os';
 
 const CONFIG_PATH = path.join(process.cwd(), "data", "system-config.json");
 
@@ -21,7 +23,7 @@ const DEFAULT_CONFIG: Record<string, string> = {
   HEALTH_CHECK_INTERVAL: "30",
 };
 
-export const ALL_COMPONENTS = ["backend", "frontend", "database", "config", "smtp", "googleCalendar"] as const;
+export const ALL_COMPONENTS = ["backend", "frontend", "database", "config", "smtp", "googleCalendar", "auth", "storage", "reminders", "security"] as const;
 export type ComponentName = (typeof ALL_COMPONENTS)[number];
 
 function readSystemConfig(): Record<string, string> {
@@ -192,6 +194,98 @@ export async function checkBackend(): Promise<CheckResult> {
   };
 }
 
+export async function checkAuth(): Promise<CheckResult> {
+  const start = Date.now();
+  try {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return { component: "auth", status: "error", message: "JWT_SECRET non defini", checkCommand: "jwt.sign({ test: true }, process.env.JWT_SECRET)", durationMs: Date.now() - start };
+    }
+    const token = jwt.sign({ test: true, userId: "healthcheck" }, secret, { expiresIn: "1m" });
+    const decoded = jwt.verify(token, secret) as { test: boolean };
+    if (!decoded.test) throw new Error("Verification echouee");
+    return { component: "auth", status: "ok", message: "Fonctionnel (sign + verify OK)", checkCommand: "jwt.sign({ test: true }, JWT_SECRET, { expiresIn: '1m' })", durationMs: Date.now() - start };
+  } catch (err: any) {
+    return { component: "auth", status: "error", message: `Erreur: ${err.message}`, recoveryAction: "Regeneration JWT_SECRET", recoveryCommand: "openssl rand -base64 32", checkCommand: "jwt.sign({ test: true }, JWT_SECRET, { expiresIn: '1m' })", durationMs: Date.now() - start };
+  }
+}
+
+export async function checkStorage(): Promise<CheckResult> {
+  const start = Date.now();
+  try {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+      return { component: "storage", status: "ok", message: "Dossier uploads cree", recoveryAction: "Creation dossier uploads", recoveryCommand: "mkdir -p uploads", checkCommand: "ls -la uploads/", recoverySuccess: true, durationMs: Date.now() - start };
+    }
+    const disk = os.freemem();
+    const total = os.totalmem();
+    const memFreeGb = (disk / 1024 / 1024 / 1024).toFixed(1);
+    const memTotalGb = (total / 1024 / 1024 / 1024).toFixed(1);
+    const uploadsSize = fs.readdirSync(uploadDir).reduce((sum, f) => {
+      try { return sum + fs.statSync(path.join(uploadDir, f)).size; } catch { return sum; }
+    }, 0);
+    const sizeMb = (uploadsSize / 1024 / 1024).toFixed(1);
+    const warnings: string[] = [];
+    if (disk / total < 0.1) warnings.push(`Memoire faible: ${memFreeGb} Go libre`);
+    return {
+      component: "storage",
+      status: warnings.length > 0 ? "warning" : "ok",
+      message: warnings.length > 0 ? warnings.join("; ") : `OK (${sizeMb} Mo, ${memFreeGb}/${memTotalGb} Go libre)`,
+      checkCommand: "df -h uploads/",
+      durationMs: Date.now() - start,
+    };
+  } catch (err: any) {
+    return { component: "storage", status: "error", message: `Erreur: ${err.message}`, checkCommand: "df -h uploads/", durationMs: Date.now() - start };
+  }
+}
+
+export async function checkReminders(): Promise<CheckResult> {
+  const start = Date.now();
+  try {
+    const uptimeHours = Math.floor(process.uptime() / 3600);
+    const recentReminders = await prisma.auditLog.count({
+      where: {
+        action: { contains: 'REMINDER' },
+        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
+    });
+    const warnings: string[] = [];
+    if (recentReminders === 0) warnings.push('Aucun rappel envoye ces dernieres 24h');
+    if (uptimeHours < 1) warnings.push('Serveur demarre recemment');
+    return {
+      component: "reminders",
+      status: warnings.length > 0 ? "warning" : "ok",
+      message: warnings.length > 0 ? warnings.join("; ") : `${recentReminders} rappels en 24h, uptime ${uptimeHours}h`,
+      checkCommand: "curl -s http://localhost:4000/api/reminders/status",
+      durationMs: Date.now() - start,
+    };
+  } catch (err: any) {
+    return { component: "reminders", status: "error", message: `Erreur: ${err.message}`, checkCommand: "curl -s http://localhost:4000/api/reminders/status", durationMs: Date.now() - start };
+  }
+}
+
+export async function checkSecurity(): Promise<CheckResult> {
+  const start = Date.now();
+  try {
+    const res = await fetch(`http://localhost:${process.env.PORT || 4000}/health`);
+    const csp = res.headers.get('content-security-policy');
+    const xcto = res.headers.get('x-content-type-options');
+    const warnings: string[] = [];
+    if (!csp) warnings.push('CSP manquant');
+    if (!xcto) warnings.push('X-Content-Type-Options manquant');
+    return {
+      component: "security",
+      status: warnings.length > 0 ? "warning" : "ok",
+      message: warnings.length > 0 ? warnings.join("; ") : 'Headers de securite presents',
+      checkCommand: "curl -s -I http://localhost:4000/health | grep -i 'content-security\\|x-content-type'",
+      durationMs: Date.now() - start,
+    };
+  } catch (err: any) {
+    return { component: "security", status: "error", message: `Erreur: ${err.message}`, checkCommand: "curl -s -I http://localhost:4000/health", durationMs: Date.now() - start };
+  }
+}
+
 const checkFns: Record<string, () => Promise<CheckResult>> = {
   backend: checkBackend,
   frontend: checkFrontend,
@@ -199,6 +293,10 @@ const checkFns: Record<string, () => Promise<CheckResult>> = {
   config: checkConfig,
   smtp: checkSmtp,
   googleCalendar: checkGoogleCalendar,
+  auth: checkAuth,
+  storage: checkStorage,
+  reminders: checkReminders,
+  security: checkSecurity,
 };
 
 export async function toggleComponent(

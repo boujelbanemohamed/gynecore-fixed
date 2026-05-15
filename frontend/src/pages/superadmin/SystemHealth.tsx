@@ -39,6 +39,10 @@ const componentLabels: Record<string, string> = {
   config: '⚙️ Configuration',
   smtp: '📧 SMTP',
   googleCalendar: '📅 Google Agenda',
+  auth: '🔐 Authentification',
+  storage: '💾 Stockage',
+  reminders: '🔔 Rappels',
+  security: '🛡️ Securite',
 };
 
 const actionLabels: Record<string, string> = {
