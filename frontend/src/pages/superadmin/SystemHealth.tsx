@@ -95,6 +95,10 @@ const statusLabel = (status: string) => {
   }
 };
 
+const autoRepairComponents = new Set(['database', 'config']);
+
+const repairMode = (key: string) => autoRepairComponents.has(key) ? 'Auto' : 'Manuelle';
+
 const SystemHealth: React.FC = () => {
   const [data, setData] = useState<HealthData | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
@@ -237,7 +241,17 @@ const SystemHealth: React.FC = () => {
         opacity: isDisabled ? 0.6 : 1,
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600 }}>{componentLabels[key] || key}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600 }}>{componentLabels[key] || key}</h3>
+            <span className="badge" style={{
+              fontSize: 10, padding: '1px 8px', borderRadius: 10,
+              background: autoRepairComponents.has(key) ? '#e8f5e9' : '#fff3e0',
+              color: autoRepairComponents.has(key) ? '#2e7d32' : '#e65100',
+              border: `1px solid ${autoRepairComponents.has(key) ? '#c8e6c9' : '#ffe0b2'}`,
+            }}>
+              {repairMode(key)}
+            </span>
+          </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {isDisabled ? (
               <span className="badge" style={{ background: '#eee', color: '#666', fontSize: 11 }}>Desactive</span>
