@@ -29,7 +29,11 @@ export const getDashboard = async (_req: Request, res: Response) => {
       prisma.patient.count({ where: { isArchived: false } }),
       prisma.appointment.count(),
       prisma.consultation.count(),
-      prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 10 }),
+      prisma.auditLog.findMany({
+        where: { createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) } },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
     ]);
     res.json({ success: true, data: { totalDoctors, totalPatients, totalAppointments, totalConsultations, recentLogs } });
   } catch (err) {

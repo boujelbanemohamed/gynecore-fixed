@@ -72,6 +72,8 @@ export type CheckResult = {
   message: string;
   recoveryAction?: string;
   recoverySuccess?: boolean;
+  recoveryCommand?: string;
+  checkCommand?: string;
   durationMs: number;
   disabled?: boolean;
 };
@@ -82,16 +84,16 @@ export async function checkDatabase(): Promise<CheckResult> {
     const before = Date.now();
     await prisma.$queryRaw`SELECT 1`;
     const dur = Date.now() - before;
-    return { component: "database", status: "ok", message: "Connectee", durationMs: dur };
+    return { component: "database", status: "ok", message: "Connectee", checkCommand: "psql -c \"SELECT 1\"", durationMs: dur };
   } catch (err: any) {
     try {
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       await logRecovery("database", "error", "RECONNECT", "Base de donnees deconnectee, reconnexion reussie", Date.now() - start);
-      return { component: "database", status: "ok", message: "Reconnectee apres interruption", recoveryAction: "Reconnexion Prisma", recoverySuccess: true, durationMs: Date.now() - start };
+      return { component: "database", status: "ok", message: "Reconnectee apres interruption", recoveryAction: "Reconnexion Prisma", recoveryCommand: "npx prisma db push", checkCommand: "psql -c \"SELECT 1\"", recoverySuccess: true, durationMs: Date.now() - start };
     } catch {
       await logRecovery("database", "error", "RECONNECT_ECHEC", `Impossible de reconnecter la base: ${err.message}`, Date.now() - start);
-      return { component: "database", status: "error", message: `Erreur: ${err.message}`, recoveryAction: "Reconnexion Prisma", recoverySuccess: false, durationMs: Date.now() - start };
+      return { component: "database", status: "error", message: `Erreur: ${err.message}`, recoveryAction: "Reconnexion Prisma", recoveryCommand: "npx prisma db push", checkCommand: "psql -c \"SELECT 1\"", recoverySuccess: false, durationMs: Date.now() - start };
     }
   }
 }
@@ -100,14 +102,14 @@ export async function checkConfig(): Promise<CheckResult> {
   const start = Date.now();
   try {
     if (fs.existsSync(CONFIG_PATH)) {
-      return { component: "config", status: "ok", message: "Fichier present", durationMs: Date.now() - start };
+      return { component: "config", status: "ok", message: "Fichier present", checkCommand: "cat data/system-config.json", durationMs: Date.now() - start };
     }
     writeSystemConfig(DEFAULT_CONFIG);
     await logRecovery("config", "missing", "RECREATE", "Fichier de configuration manquant, cree avec les valeurs par defaut", Date.now() - start);
-    return { component: "config", status: "ok", message: "Fichier recrete avec les valeurs par defaut", recoveryAction: "Creation fichier", recoverySuccess: true, durationMs: Date.now() - start };
+    return { component: "config", status: "ok", message: "Fichier recrete avec les valeurs par defaut", recoveryAction: "Creation fichier", recoveryCommand: "cat > data/system-config.json << 'EOF'\n{ ... contenu JSON ... }\nEOF", checkCommand: "cat data/system-config.json", recoverySuccess: true, durationMs: Date.now() - start };
   } catch (err: any) {
     await logRecovery("config", "error", "RECREATE_ECHEC", `Impossible de creer le fichier: ${err.message}`, Date.now() - start);
-    return { component: "config", status: "error", message: `Erreur: ${err.message}`, recoveryAction: "Creation fichier", recoverySuccess: false, durationMs: Date.now() - start };
+    return { component: "config", status: "error", message: `Erreur: ${err.message}`, recoveryAction: "Creation fichier", recoveryCommand: "cat > data/system-config.json << 'EOF'\n{ ... contenu JSON ... }\nEOF", checkCommand: "cat data/system-config.json", recoverySuccess: false, durationMs: Date.now() - start };
   }
 }
 
@@ -118,12 +120,12 @@ export async function checkSmtp(): Promise<CheckResult> {
     const host = config.SMTP_HOST || process.env.SMTP_HOST || "";
     const user = config.SMTP_USER || process.env.SMTP_USER || "";
     if (!host) {
-      return { component: "smtp", status: "warning", message: "Non configure", durationMs: Date.now() - start };
+      return { component: "smtp", status: "warning", message: "Non configure", checkCommand: "openssl s_client -starttls smtp -connect smtp.gmail.com:587", durationMs: Date.now() - start };
     }
     if (!user) {
-      return { component: "smtp", status: "warning", message: "Utilisateur non defini", durationMs: Date.now() - start };
+      return { component: "smtp", status: "warning", message: "Utilisateur non defini", checkCommand: "openssl s_client -starttls smtp -connect smtp.gmail.com:587", durationMs: Date.now() - start };
     }
-    return { component: "smtp", status: "ok", message: `Configure (${host})`, durationMs: Date.now() - start };
+    return { component: "smtp", status: "ok", message: `Configure (${host})`, checkCommand: "openssl s_client -starttls smtp -connect smtp.gmail.com:587", durationMs: Date.now() - start };
   } catch (err: any) {
     return { component: "smtp", status: "error", message: `Erreur: ${err.message}`, durationMs: Date.now() - start };
   }
@@ -139,10 +141,11 @@ export async function checkGoogleCalendar(): Promise<CheckResult> {
       component: "googleCalendar",
       status: tokens.length > 0 ? "ok" : "warning",
       message: tokens.length > 0 ? `${tokens.length} medecin(s) connecte(s)` : "Aucun medecin connecte",
+      checkCommand: "curl -s -H \"Authorization: Bearer <token>\" https://www.googleapis.com/calendar/v3/users/me/calendarList",
       durationMs: Date.now() - start,
     };
   } catch (err: any) {
-    return { component: "googleCalendar", status: "error", message: `Erreur: ${err.message}`, durationMs: Date.now() - start };
+    return { component: "googleCalendar", status: "error", message: `Erreur: ${err.message}`, checkCommand: "curl -s -H \"Authorization: Bearer <token>\" https://www.googleapis.com/calendar/v3/users/me/calendarList", durationMs: Date.now() - start };
   }
 }
 
@@ -154,11 +157,11 @@ export async function checkFrontend(): Promise<CheckResult> {
     const res = await fetch(url);
     const dur = Date.now() - start;
     if (res.ok) {
-      return { component: "frontend", status: "ok", message: `Repond (${res.status})`, durationMs: dur };
+      return { component: "frontend", status: "ok", message: `Repond (${res.status})`, checkCommand: "curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000", durationMs: dur };
     }
-    return { component: "frontend", status: "error", message: `Code ${res.status}`, durationMs: dur };
+    return { component: "frontend", status: "error", message: `Code ${res.status}`, recoveryAction: "Redemarrage serveur frontend", recoveryCommand: "kill $(lsof -ti:3000) 2>/dev/null; serve -s build --single -l 3000 &", checkCommand: "curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000", durationMs: dur };
   } catch (err: any) {
-    return { component: "frontend", status: "error", message: `Inaccessible: ${err.message}`, durationMs: Date.now() - start };
+    return { component: "frontend", status: "error", message: `Inaccessible: ${err.message}`, recoveryAction: "Redemarrage serveur frontend", recoveryCommand: "kill $(lsof -ti:3000) 2>/dev/null; serve -s build --single -l 3000 &", checkCommand: "curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000", durationMs: Date.now() - start };
   }
 }
 
@@ -184,6 +187,7 @@ export async function checkBackend(): Promise<CheckResult> {
     component: "backend",
     status,
     message: warnings.length > 0 ? warnings.join("; ") : "Fonctionnel",
+    checkCommand: "curl -s http://localhost:4000/api/doctor/health",
     durationMs: Date.now() - start,
   };
 }

@@ -102,6 +102,7 @@ const SystemHealth: React.FC = () => {
   const [savingInterval, setSavingInterval] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [recovering, setRecovering] = useState<string | null>(null);
+  const [recoveryResults, setRecoveryResults] = useState<Record<string, any>>({});
   const [lastToggleResult, setLastToggleResult] = useState<string | null>(null);
   const [auditPage, setAuditPage] = useState(1);
   const [auditTotalPages, setAuditTotalPages] = useState(1);
@@ -206,11 +207,19 @@ const SystemHealth: React.FC = () => {
     }
   };
 
-  const handleRecover = async (component: string) => {
+  const handleRecover = async (component: string, isDisabled: boolean) => {
     setRecovering(component);
+    setRecoveryResults(prev => ({ ...prev, [component]: null }));
     try {
-      await superadminAPI.recoverHealthComponent(component);
+      if (isDisabled) {
+        await superadminAPI.toggleHealthComponent(component, true);
+      }
+      const res = await superadminAPI.recoverHealthComponent(component);
+      setRecoveryResults(prev => ({ ...prev, [component]: res.data.data }));
       fetchHealth(false);
+      setTimeout(() => {
+        setRecoveryResults(prev => ({ ...prev, [component]: null }));
+      }, 5000);
     } catch { /* ignore */ }
     finally { setRecovering(null); }
   };
@@ -262,12 +271,29 @@ const SystemHealth: React.FC = () => {
             <span style={{ fontWeight: 600 }}>Reparation :</span> {check.recoveryAction} — {check.recoverySuccess ? 'Reussi' : 'Echec'}
           </div>
         )}
-        {!isDisabled && check.status !== 'ok' && (
-          <button onClick={() => handleRecover(key)} disabled={recovering === key}
-            style={{ marginTop: 12, padding: '6px 14px', borderRadius: 4, border: '1px solid #e67e22', background: '#fff', color: '#e67e22', fontSize: 12, cursor: 'pointer', fontWeight: 500, opacity: recovering === key ? 0.6 : 1 }}>
-            {recovering === key ? 'Reparation...' : 'Reparer'}
-          </button>
+        {recoveryResults[key] && (
+          <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 6, fontSize: 12, background: '#fff8e1', border: '1px solid #ffe082' }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Resultat de la verification :</div>
+            <div>Statut : <span style={{ fontWeight: 500, color: statusColor(recoveryResults[key].status) }}>{statusLabel(recoveryResults[key].status)}</span></div>
+            <div style={{ marginTop: 2 }}>{recoveryResults[key].message}</div>
+            <div style={{ marginTop: 4, padding: '6px 10px', background: '#f5f5f5', borderRadius: 4 }}>
+              <span style={{ fontWeight: 600 }}>Commande executee :</span>
+              <pre style={{ margin: '6px 0 0', padding: '8px 10px', background: '#1e1e1e', color: '#d4d4d4', borderRadius: 4, fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace' }}>
+                {recoveryResults[key].recoveryCommand || recoveryResults[key].checkCommand || 'Aucune commande'}
+              </pre>
+              {recoveryResults[key].recoveryCommand && (
+                <span style={{ marginLeft: 0, color: recoveryResults[key].recoverySuccess ? '#34a853' : '#ea4335', fontSize: 11 }}>
+                  → {recoveryResults[key].recoverySuccess ? 'Succes' : 'Echec'}
+                </span>
+              )}
+            </div>
+            <div style={{ marginTop: 2, color: '#999' }}>Duree : {recoveryResults[key].durationMs} ms</div>
+          </div>
         )}
+        <button onClick={() => handleRecover(key, isDisabled)} disabled={recovering === key}
+          style={{ marginTop: 12, padding: '6px 14px', borderRadius: 4, border: '1px solid #e67e22', background: '#fff', color: '#e67e22', fontSize: 12, cursor: 'pointer', fontWeight: 500, opacity: recovering === key ? 0.6 : 1 }}>
+          {recovering === key ? 'Reparation...' : isDisabled ? 'Activer + Verifier' : check.status !== 'ok' ? 'Reparer' : 'Verifier'}
+        </button>
       </div>
     );
   };

@@ -32,7 +32,7 @@ const SuperadminDashboard: React.FC = () => {
         ))}
       </div>
       <div className="card" style={{ padding: 20 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Dernières actions (audit)</h3>
+        <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Dernieres actions (audit) de la journee du {new Date().toLocaleDateString('fr-FR')}</h3>
         {stats.recentLogs?.length ? (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead><tr style={{ borderBottom: '2px solid #e0e0e0', textAlign: 'left' }}>
