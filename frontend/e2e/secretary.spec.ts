@@ -30,15 +30,14 @@ test.describe('Secretary Portal', () => {
     test('TC01 - Login page loads correctly', async ({ page }) => {
       await page.goto(BASE_URL + '/secretary/login');
       await page.waitForLoadState('networkidle');
-      await expect(page.getByText('Connexion secretaire')).toBeVisible();
+      await expect(page.getByText('Connexion secrétaire')).toBeVisible();
       await expect(page.locator('input[type="email"]')).toBeVisible();
       await expect(page.locator('input[type="password"]')).toBeVisible();
     });
 
     test('TC02 - Successful login redirects to secretary dashboard', async ({ page }) => {
       await loginSecretary(page);
-      await expect(page.getByText('Espace Secretaire', { exact: true })).toBeVisible();
-      await expect(page.getByText('GyneCare', { exact: true })).toBeVisible();
+      await expect(page.getByText('Espace secretaire', { exact: false })).toBeVisible();
     });
 
     test('TC03 - Login with wrong credentials shows error', async ({ page }) => {

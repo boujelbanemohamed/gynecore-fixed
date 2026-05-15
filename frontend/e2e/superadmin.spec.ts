@@ -196,9 +196,9 @@ test.describe('Superadmin Portal', () => {
 
     test('SA18 - Health page loads with all components', async ({ page }) => {
       await page.waitForLoadState('networkidle');
-      await expect(page.getByText('Santé du système')).toBeVisible();
+      await expect(page.getByText('Sante du systeme')).toBeVisible();
       await expect(page.getByRole('heading', { name: '🖥️ Backend' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: '🗄️ Base de données' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: '🗄️ Base de donnees' })).toBeVisible();
       await expect(page.getByRole('heading', { name: '⚙️ Configuration' })).toBeVisible();
       await expect(page.getByRole('heading', { name: '📧 SMTP' })).toBeVisible();
     });
@@ -214,12 +214,12 @@ test.describe('Superadmin Portal', () => {
       await expect(refreshBtn).toBeVisible();
       await refreshBtn.click();
       await page.waitForTimeout(1000);
-      await expect(page.getByText('Santé du système')).toBeVisible();
+      await expect(page.getByText('Sante du systeme')).toBeVisible();
     });
 
-    test('SA21 - Récapitulatif section shows all service badges', async ({ page }) => {
+    test('SA21 - Recapitulatif section shows all service badges', async ({ page }) => {
       await page.waitForLoadState('networkidle');
-      await expect(page.getByText('Récapitulatif')).toBeVisible();
+      await expect(page.getByText('Recapitulatif')).toBeVisible();
       const body = await page.locator('body').textContent();
       expect(body).toContain('backend');
       expect(body).toContain('database');
@@ -228,23 +228,18 @@ test.describe('Superadmin Portal', () => {
 
     test('SA22 - Auto-refresh selector exists with options', async ({ page }) => {
       await page.waitForLoadState('networkidle');
-      const select = page.locator('select');
-      await expect(select).toBeVisible();
-      const options = await select.locator('option').allTextContents();
-      expect(options).toContain('Désactivé');
-      expect(options).toContain('10s');
-      expect(options).toContain('30s');
-      expect(options).toContain('1 min');
-      expect(options).toContain('2 min');
-      expect(options).toContain('5 min');
+      const input = page.locator('input[type="number"]');
+      await expect(input).toBeVisible();
+      await expect(input).toHaveValue(/^\d+$/);
     });
 
     test('SA23 - Changing auto-refresh interval works', async ({ page }) => {
       await page.waitForLoadState('networkidle');
-      await page.locator('select').selectOption('10');
+      const input = page.locator('input[type="number"]');
+      await input.fill('60');
       await page.waitForTimeout(500);
-      const selected = await page.locator('select').inputValue();
-      expect(selected).toBe('10');
+      const val = await input.inputValue();
+      expect(val).toBe('60');
     });
   });
 

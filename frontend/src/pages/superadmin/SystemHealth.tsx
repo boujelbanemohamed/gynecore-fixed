@@ -33,12 +33,12 @@ interface AuditEntry {
 }
 
 const componentLabels: Record<string, string> = {
-  backend: 'Backend',
-  frontend: 'Frontend',
-  database: 'Base de donnees',
-  config: 'Configuration',
-  smtp: 'SMTP',
-  googleCalendar: 'Google Agenda',
+  backend: '🖥️ Backend',
+  frontend: '🌐 Frontend',
+  database: '🗄️ Base de donnees',
+  config: '⚙️ Configuration',
+  smtp: '📧 SMTP',
+  googleCalendar: '📅 Google Agenda',
 };
 
 const actionLabels: Record<string, string> = {
@@ -330,7 +330,7 @@ const SystemHealth: React.FC = () => {
             borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500,
             opacity: loading ? 0.6 : 1,
           }}>
-            {loading ? 'Verification...' : 'Rafraichir'}
+            {loading ? 'Verification...' : 'Rafraîchir'}
           </button>
         </div>
       </div>
